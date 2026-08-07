@@ -78,6 +78,18 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentLanguage = MutableStateFlow(initialLang)
     val currentLanguage = _currentLanguage.asStateFlow()
 
+    // Autosave & Restore Notification State
+    private val _restoredSessionNotice = MutableStateFlow<String?>(null)
+    val restoredSessionNotice = _restoredSessionNotice.asStateFlow()
+
+    fun dismissRestoredNotice() {
+        _restoredSessionNotice.value = null
+    }
+
+    init {
+        restoreAutosaveProgress()
+    }
+
     fun setLanguage(language: AppLanguage) {
         _currentLanguage.value = language
         prefs.edit().putString("selected_lang", language.name).apply()
@@ -238,6 +250,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setCrop(crop: String) {
         _selectedCrop.value = crop
+        saveAutosaveProgress()
     }
 
     fun startTracking() {
@@ -250,14 +263,17 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         if (_hasLocationPermission.value && locationCallback == null) {
             startLocationUpdates()
         }
+        saveAutosaveProgress()
     }
 
     fun pauseTracking() {
         _isPaused.value = true
+        saveAutosaveProgress()
     }
 
     fun resumeTracking() {
         _isPaused.value = false
+        saveAutosaveProgress()
     }
 
     fun markPoint(lat: Double? = null, lng: Double? = null) {
@@ -272,6 +288,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         _boundaryPoints.value = currentList
 
         recalculateMeasurementMetrics(currentList)
+        saveAutosaveProgress()
     }
 
     fun addManualPointOnMap(lat: Double, lng: Double) {
@@ -279,6 +296,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         currentList.add(MapPoint(lat, lng))
         _boundaryPoints.value = currentList
         recalculateMeasurementMetrics(currentList)
+        saveAutosaveProgress()
     }
 
     private fun recalculateMeasurementMetrics(points: List<MapPoint>) {
@@ -293,12 +311,107 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun undoLastPoint() {
+        val currentList = _boundaryPoints.value.toMutableList()
+        if (currentList.isNotEmpty()) {
+            currentList.removeAt(currentList.lastIndex)
+            _boundaryPoints.value = currentList
+            recalculateMeasurementMetrics(currentList)
+            saveAutosaveProgress()
+        }
+    }
+
+    fun clearAllPoints() {
+        _boundaryPoints.value = emptyList()
+        _walkingDistanceMeters.value = 0.0
+        _estimatedAreaHectares.value = 0.0
+        clearAutosaveProgress()
+    }
+
+    fun deletePointAt(index: Int) {
+        val currentList = _boundaryPoints.value.toMutableList()
+        if (index in currentList.indices) {
+            currentList.removeAt(index)
+            _boundaryPoints.value = currentList
+            recalculateMeasurementMetrics(currentList)
+            saveAutosaveProgress()
+        }
+    }
+
     fun resetMeasurement() {
         _isTracking.value = false
         _isPaused.value = false
         _boundaryPoints.value = emptyList()
         _walkingDistanceMeters.value = 0.0
         _estimatedAreaHectares.value = 0.0
+        clearAutosaveProgress()
+    }
+
+    fun saveAutosaveProgress() {
+        try {
+            val points = _boundaryPoints.value
+            if (points.isEmpty()) {
+                clearAutosaveProgress()
+                return
+            }
+            val pointsStr = points.joinToString(";") { "${it.lat},${it.lng}" }
+            prefs.edit()
+                .putString("autosave_boundary_points", pointsStr)
+                .putBoolean("autosave_is_tracking", _isTracking.value)
+                .putBoolean("autosave_is_paused", _isPaused.value)
+                .putString("autosave_selected_crop", _selectedCrop.value)
+                .putFloat("autosave_walking_distance", _walkingDistanceMeters.value.toFloat())
+                .putFloat("autosave_estimated_area", _estimatedAreaHectares.value.toFloat())
+                .putLong("autosave_timestamp", System.currentTimeMillis())
+                .apply()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun restoreAutosaveProgress() {
+        try {
+            val pointsStr = prefs.getString("autosave_boundary_points", null) ?: return
+            if (pointsStr.isBlank()) return
+
+            val pointList = pointsStr.split(";").mapNotNull { item ->
+                val parts = item.split(",")
+                if (parts.size == 2) {
+                    val lat = parts[0].toDoubleOrNull()
+                    val lng = parts[1].toDoubleOrNull()
+                    if (lat != null && lng != null) MapPoint(lat, lng) else null
+                } else null
+            }
+
+            if (pointList.isNotEmpty()) {
+                _boundaryPoints.value = pointList
+                _isTracking.value = prefs.getBoolean("autosave_is_tracking", false)
+                _isPaused.value = prefs.getBoolean("autosave_is_paused", false)
+                _selectedCrop.value = prefs.getString("autosave_selected_crop", "Rice") ?: "Rice"
+                recalculateMeasurementMetrics(pointList)
+
+                val areaHa = _estimatedAreaHectares.value
+                _restoredSessionNotice.value = "Restored previous progress: ${pointList.size} points marked (${String.format("%.2f", areaHa)} ha)"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun clearAutosaveProgress() {
+        try {
+            prefs.edit()
+                .remove("autosave_boundary_points")
+                .remove("autosave_is_tracking")
+                .remove("autosave_is_paused")
+                .remove("autosave_selected_crop")
+                .remove("autosave_walking_distance")
+                .remove("autosave_estimated_area")
+                .remove("autosave_timestamp")
+                .apply()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun saveCompletedFarm(farmName: String = "Rice Farm") {
@@ -661,6 +774,12 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private val _soilRecommendation = MutableStateFlow<SoilRecommendation?>(null)
     val soilRecommendation = _soilRecommendation.asStateFlow()
 
+    private val _savedSoilReports = MutableStateFlow<List<SoilReport>>(emptyList())
+    val savedSoilReports = _savedSoilReports.asStateFlow()
+
+    private val _activeSoilReport = MutableStateFlow<SoilReport?>(null)
+    val activeSoilReport = _activeSoilReport.asStateFlow()
+
     fun setSoilCrop(crop: String) { _soilCrop.value = crop }
     fun setSoilType(type: String) { _soilType.value = type }
     fun setNitrogenLevel(level: String) { _nitrogenLevel.value = level }
@@ -669,11 +788,34 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     fun setOrganicMatter(om: String) { _organicMatter.value = om }
 
     fun generateSoilRecommendation() {
-        val n = _nitrogenLevel.value
-        val p = _phosphorusLevel.value
-        val k = _potassiumLevel.value
-        val soil = _soilType.value
-        val om = _organicMatter.value
+        generateSoilRecommendationWithCustomValues(
+            crop = _soilCrop.value,
+            type = _soilType.value,
+            n = _nitrogenLevel.value,
+            p = _phosphorusLevel.value,
+            k = _potassiumLevel.value,
+            om = _organicMatter.value,
+            ph = 6.2,
+            moisture = 48.0
+        )
+    }
+
+    fun generateSoilRecommendationWithCustomValues(
+        crop: String,
+        type: String,
+        n: String,
+        p: String,
+        k: String,
+        om: String,
+        ph: Double,
+        moisture: Double
+    ) {
+        _soilCrop.value = crop
+        _soilType.value = type
+        _nitrogenLevel.value = n
+        _phosphorusLevel.value = p
+        _potassiumLevel.value = k
+        _organicMatter.value = om
 
         val recs = mutableListOf<String>()
         val schedule = mutableListOf<String>()
@@ -683,6 +825,26 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         if (adv.riskLevel != WeatherRiskLevel.OPTIMAL) {
             recs.add("🌤️ Weather Precaution (${wData.locationName}): ${adv.title} — ${adv.actionStep}")
         }
+
+        // Calculate Soil Health Score (0-100)
+        var nScore = if (n == "Medium") 30 else if (n == "High") 25 else 15
+        var pScore = if (p == "Medium" || p == "High") 25 else 12
+        var kScore = if (k == "Medium" || k == "High") 25 else 12
+        var phScore = if (ph in 6.0..7.2) 20 else if (ph in 5.5..7.8) 14 else 8
+
+        val totalScore = (nScore + pScore + kScore + phScore).coerceIn(25, 98)
+
+        val healthStatus = when {
+            totalScore >= 80 -> "OPTIMAL SOIL QUALITY"
+            totalScore >= 65 -> "MODERATE NUTRIENT BALANCE"
+            else -> "NUTRIENT DEFICIENCY DETECTED"
+        }
+
+        // Numerical PPM estimates based on levels
+        val nPpm = if (n == "High") 42 else if (n == "Medium") 28 else 14
+        val pPpm = if (p == "High") 35 else if (p == "Medium") 22 else 10
+        val kPpm = if (k == "High") 180 else if (k == "Medium") 125 else 75
+        val omPct = if (om == ">4%") 4.5 else if (om == "2-4%") 3.2 else 1.5
 
         if (n == "Low") {
             recs.add("High Nitrogen deficiency detected. Boost basal application with Urea or Complete fertilizer.")
@@ -707,9 +869,9 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
             recs.add("Potassium is deficient. Apply MOP (0-0-60) at booting stage for disease resistance and filled grains.")
         }
 
-        if (soil == "Sandy") {
+        if (type == "Sandy") {
             recs.add("Sandy soil loses nutrients quickly through leaching. Split fertilizer into 4 smaller top-dressings.")
-        } else if (soil == "Clay") {
+        } else if (type == "Clay") {
             recs.add("Clay soil holds water well. Maintain shallow 2-3 cm water layer to maximize nutrient uptake.")
         }
 
@@ -717,10 +879,65 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
             recs.add("Low Organic Matter. Incorporate 10-20 bags organic compost or paddy straw post-harvest.")
         }
 
-        _soilRecommendation.value = SoilRecommendation(
-            summary = "Targeted nutrient recommendations for ${_soilCrop.value} in $soil soil.",
+        if (ph < 5.8) {
+            recs.add("Acidic soil detected (pH $ph). Apply 250-500 kg agricultural lime per hectare before planting.")
+        } else if (ph > 7.5) {
+            recs.add("Slightly alkaline soil (pH $ph). Use Ammonium Sulfate as nitrogen source to balance pH.")
+        }
+
+        val recObj = SoilRecommendation(
+            summary = "Targeted nutrient recommendations for $crop in $type soil (Health Index: $totalScore/100).",
             recommendations = recs,
             applicationSchedule = schedule
+        )
+        _soilRecommendation.value = recObj
+
+        val report = SoilReport(
+            crop = crop,
+            soilType = type,
+            healthScore = totalScore,
+            healthStatus = healthStatus,
+            nitrogenLevel = n,
+            nitrogenPpm = nPpm,
+            phosphorusLevel = p,
+            phosphorusPpm = pPpm,
+            potassiumLevel = k,
+            potassiumPpm = kPpm,
+            phValue = ph,
+            organicMatterPct = omPct,
+            moisturePct = moisture,
+            summary = recObj.summary,
+            recommendations = recs,
+            applicationSchedule = schedule
+        )
+
+        _activeSoilReport.value = report
+    }
+
+    fun saveActiveSoilReport() {
+        val current = _activeSoilReport.value ?: return
+        val list = _savedSoilReports.value.toMutableList()
+        list.add(0, current)
+        _savedSoilReports.value = list
+    }
+
+    fun deleteSoilReport(report: SoilReport) {
+        val list = _savedSoilReports.value.toMutableList()
+        list.removeAll { it.id == report.id }
+        _savedSoilReports.value = list
+    }
+
+    fun selectSavedSoilReport(report: SoilReport) {
+        _activeSoilReport.value = report
+        _soilCrop.value = report.crop
+        _soilType.value = report.soilType
+        _nitrogenLevel.value = report.nitrogenLevel
+        _phosphorusLevel.value = report.phosphorusLevel
+        _potassiumLevel.value = report.potassiumLevel
+        _soilRecommendation.value = SoilRecommendation(
+            summary = report.summary,
+            recommendations = report.recommendations,
+            applicationSchedule = report.applicationSchedule
         )
     }
 
@@ -861,3 +1078,25 @@ data class SoilRecommendation(
     val recommendations: List<String>,
     val applicationSchedule: List<String>
 )
+
+data class SoilReport(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val dateFormatted: String = java.text.SimpleDateFormat("MMM dd, yyyy - hh:mm a", java.util.Locale.getDefault()).format(java.util.Date()),
+    val crop: String,
+    val soilType: String,
+    val healthScore: Int,
+    val healthStatus: String,
+    val nitrogenLevel: String,
+    val nitrogenPpm: Int,
+    val phosphorusLevel: String,
+    val phosphorusPpm: Int,
+    val potassiumLevel: String,
+    val potassiumPpm: Int,
+    val phValue: Double,
+    val organicMatterPct: Double,
+    val moisturePct: Double,
+    val summary: String,
+    val recommendations: List<String>,
+    val applicationSchedule: List<String>
+)
+

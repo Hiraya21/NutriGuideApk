@@ -101,6 +101,8 @@ fun RiceFarmAssistantApp(
     val potassiumLevel by viewModel.potassiumLevel.collectAsStateWithLifecycle()
     val organicMatter by viewModel.organicMatter.collectAsStateWithLifecycle()
     val soilRecommendation by viewModel.soilRecommendation.collectAsStateWithLifecycle()
+    val activeSoilReport by viewModel.activeSoilReport.collectAsStateWithLifecycle()
+    val savedSoilReports by viewModel.savedSoilReports.collectAsStateWithLifecycle()
 
     // Booklet states
     val bookletSearchQuery by viewModel.bookletSearchQuery.collectAsStateWithLifecycle()
@@ -115,6 +117,9 @@ fun RiceFarmAssistantApp(
     // Delete Account modal state
     val isDeleteAccountModalVisible by viewModel.showDeleteAccountModal.collectAsStateWithLifecycle()
     val accountDeletedMessage by viewModel.accountDeletedMessage.collectAsStateWithLifecycle()
+
+    // Autosave notification state
+    val restoredSessionNotice by viewModel.restoredSessionNotice.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -154,6 +159,8 @@ fun RiceFarmAssistantApp(
                     potassium = potassiumLevel,
                     organicMatter = organicMatter,
                     recommendation = soilRecommendation,
+                    activeReport = activeSoilReport,
+                    savedReports = savedSoilReports,
                     onCropChange = { viewModel.setSoilCrop(it) },
                     onSoilTypeChange = { viewModel.setSoilType(it) },
                     onNitrogenChange = { viewModel.setNitrogenLevel(it) },
@@ -161,6 +168,12 @@ fun RiceFarmAssistantApp(
                     onPotassiumChange = { viewModel.setPotassiumLevel(it) },
                     onOrganicMatterChange = { viewModel.setOrganicMatter(it) },
                     onGenerate = { viewModel.generateSoilRecommendation() },
+                    onGenerateCustom = { c, t, n, p, k, om, ph, moisture ->
+                        viewModel.generateSoilRecommendationWithCustomValues(c, t, n, p, k, om, ph, moisture)
+                    },
+                    onSaveReport = { viewModel.saveActiveSoilReport() },
+                    onDeleteReport = { viewModel.deleteSoilReport(it) },
+                    onSelectSavedReport = { viewModel.selectSavedSoilReport(it) },
                     onBack = { isSoilAnalysisOpen = false }
                 )
             } else if (selectedGuide != null) {
@@ -194,11 +207,16 @@ fun RiceFarmAssistantApp(
                         gpsAccuracy = gpsAccuracy,
                         currentLocation = currentLocation,
                         currentLanguage = currentLanguage,
+                        restoredNotice = restoredSessionNotice,
+                        onDismissRestoredNotice = { viewModel.dismissRestoredNotice() },
                         onLocationPermissionGranted = { viewModel.onLocationPermissionGranted() },
                         onCropChange = { viewModel.setCrop(it) },
                         onStartTracking = { viewModel.startTracking() },
                         onPauseTracking = { viewModel.pauseTracking() },
                         onMarkPoint = { viewModel.markPoint() },
+                        onUndoPoint = { viewModel.undoLastPoint() },
+                        onClearPoints = { viewModel.clearAllPoints() },
+                        onDeletePointAt = { index -> viewModel.deletePointAt(index) },
                         onAddPointAt = { lat, lng -> viewModel.addManualPointOnMap(lat, lng) },
                         onSaveFarm = { farmName -> viewModel.saveCompletedFarm(farmName) }
                     )

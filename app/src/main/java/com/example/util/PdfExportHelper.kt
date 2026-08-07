@@ -17,6 +17,7 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.example.ui.viewmodel.CalculationResult
 import com.example.ui.viewmodel.SoilRecommendation
+import com.example.ui.viewmodel.SoilReport
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -245,6 +246,166 @@ object PdfExportHelper {
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "Failed to generate PDF: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /**
+     * Generates a PDF report for Soil Health & Analysis Dashboard.
+     */
+    fun printSoilReport(
+        context: Context,
+        report: SoilReport
+    ) {
+        try {
+            val pdfDocument = PdfDocument()
+            val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+            val page = pdfDocument.startPage(pageInfo)
+            val canvas = page.canvas
+
+            val paint = Paint()
+            val textPaint = Paint().apply {
+                color = Color.BLACK
+                textSize = 12f
+                isAntiAlias = true
+            }
+
+            var y = 40f
+
+            // Header Banner
+            paint.color = Color.rgb(46, 125, 50) // Deep Green
+            canvas.drawRect(20f, y, 575f, y + 60f, paint)
+
+            textPaint.color = Color.WHITE
+            textPaint.textSize = 20f
+            textPaint.isFakeBoldText = true
+            canvas.drawText("NutriGuide — Soil Health Analysis Report", 35f, y + 36f, textPaint)
+
+            y += 80f
+
+            // Date & Details
+            textPaint.color = Color.BLACK
+            textPaint.textSize = 12f
+            textPaint.isFakeBoldText = false
+            canvas.drawText("Date: ${report.dateFormatted}", 30f, y, textPaint)
+            y += 20f
+            canvas.drawText("Target Crop: ${report.crop} | Soil Texture: ${report.soilType}", 30f, y, textPaint)
+            y += 20f
+            canvas.drawText("Overall Soil Health Index: ${report.healthScore}/100 (${report.healthStatus})", 30f, y, textPaint)
+
+            y += 30f
+            paint.color = Color.LTGRAY
+            canvas.drawLine(30f, y, 565f, y, paint)
+            y += 20f
+
+            // NPK & Soil Properties Table
+            textPaint.textSize = 14f
+            textPaint.isFakeBoldText = true
+            textPaint.color = Color.rgb(46, 125, 50)
+            canvas.drawText("1. Soil Test Chemical & Physical Parameters:", 30f, y, textPaint)
+            y += 25f
+
+            paint.color = Color.rgb(238, 247, 238)
+            canvas.drawRect(30f, y - 15f, 565f, y + 10f, paint)
+
+            textPaint.textSize = 11f
+            textPaint.isFakeBoldText = true
+            textPaint.color = Color.BLACK
+            canvas.drawText("Parameter", 35f, y, textPaint)
+            canvas.drawText("Measured Value", 220f, y, textPaint)
+            canvas.drawText("Nutrient Status / Rating", 380f, y, textPaint)
+
+            y += 25f
+            textPaint.isFakeBoldText = false
+
+            val rows = listOf(
+                Triple("Nitrogen (N)", "${report.nitrogenPpm} ppm", report.nitrogenLevel),
+                Triple("Phosphorus (P)", "${report.phosphorusPpm} ppm", report.phosphorusLevel),
+                Triple("Potassium (K)", "${report.potassiumPpm} ppm", report.potassiumLevel),
+                Triple("Soil pH Level", "${report.phValue} pH", if (report.phValue in 6.0..7.0) "Optimal Range" else "Requires Adjustment"),
+                Triple("Organic Matter", "${report.organicMatterPct}%", if (report.organicMatterPct >= 3.0) "Adequate" else "Low"),
+                Triple("Soil Moisture", "${report.moisturePct}%", "Sufficient")
+            )
+
+            rows.forEach { (param, valStr, status) ->
+                canvas.drawText(param, 35f, y, textPaint)
+                canvas.drawText(valStr, 220f, y, textPaint)
+                canvas.drawText(status, 380f, y, textPaint)
+                y += 20f
+            }
+
+            y += 15f
+            paint.color = Color.GRAY
+            canvas.drawLine(30f, y, 565f, y, paint)
+            y += 25f
+
+            // Recommendations & Schedule
+            textPaint.textSize = 14f
+            textPaint.isFakeBoldText = true
+            textPaint.color = Color.rgb(46, 125, 50)
+            canvas.drawText("2. Field Action Plan & Application Schedule:", 30f, y, textPaint)
+            y += 20f
+
+            textPaint.textSize = 10f
+            textPaint.isFakeBoldText = false
+            textPaint.color = Color.BLACK
+
+            report.recommendations.forEach { rec ->
+                if (y < 700) {
+                    canvas.drawText("• $rec", 40f, y, textPaint)
+                    y += 16f
+                }
+            }
+
+            report.applicationSchedule.forEach { sched ->
+                if (y < 700) {
+                    canvas.drawText("📅 $sched", 40f, y, textPaint)
+                    y += 16f
+                }
+            }
+
+            pdfDocument.finishPage(page)
+
+            val file = File(context.cacheDir, "NutriGuide_Soil_Report.pdf")
+            pdfDocument.writeTo(FileOutputStream(file))
+            pdfDocument.close()
+
+            val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+            printManager.print("Soil Health Report", object : PrintDocumentAdapter() {
+                override fun onLayout(
+                    oldAttributes: PrintAttributes?,
+                    newAttributes: PrintAttributes?,
+                    cancellationSignal: android.os.CancellationSignal?,
+                    callback: LayoutResultCallback?,
+                    extras: Bundle?
+                ) {
+                    val info = PrintDocumentInfo.Builder("NutriGuide_Soil_Report.pdf")
+                        .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+                        .setPageCount(1)
+                        .build()
+                    callback?.onLayoutFinished(info, true)
+                }
+
+                override fun onWrite(
+                    pages: Array<out PageRange>?,
+                    destination: android.os.ParcelFileDescriptor?,
+                    cancellationSignal: android.os.CancellationSignal?,
+                    callback: WriteResultCallback?
+                ) {
+                    try {
+                        val input = file.inputStream()
+                        val output = FileOutputStream(destination?.fileDescriptor)
+                        input.copyTo(output)
+                        callback?.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
+                    } catch (e: Exception) {
+                        callback?.onWriteFailed(e.message)
+                    }
+                }
+            }, null)
+
+            Toast.makeText(context, "Exporting soil report PDF...", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Failed to export PDF: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
         }
     }
 

@@ -3,6 +3,7 @@ package com.example.ui.screens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -24,20 +25,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CenterFocusWeak
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Opacity
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -46,10 +60,14 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +76,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -76,10 +95,14 @@ import com.example.ui.theme.FarmBrownDark
 import com.example.ui.theme.FarmBrownHeader
 import com.example.ui.theme.FarmBrownLight
 import com.example.ui.theme.FarmBrownPrimary
+import com.example.ui.theme.FarmGreenHeader
 import com.example.ui.theme.FarmTextDark
 import com.example.ui.theme.FarmTextSecondary
 import com.example.ui.theme.FarmYellowAccent
 import com.example.ui.viewmodel.SoilRecommendation
+import com.example.ui.viewmodel.SoilReport
+import com.example.util.PdfExportHelper
+import kotlinx.coroutines.delay
 
 @Composable
 fun SoilAnalysisScreen(
@@ -90,6 +113,8 @@ fun SoilAnalysisScreen(
     potassium: String,
     organicMatter: String,
     recommendation: SoilRecommendation?,
+    activeReport: SoilReport?,
+    savedReports: List<SoilReport>,
     onCropChange: (String) -> Unit,
     onSoilTypeChange: (String) -> Unit,
     onNitrogenChange: (String) -> Unit,
@@ -97,14 +122,19 @@ fun SoilAnalysisScreen(
     onPotassiumChange: (String) -> Unit,
     onOrganicMatterChange: (String) -> Unit,
     onGenerate: () -> Unit,
+    onGenerateCustom: (crop: String, type: String, n: String, p: String, k: String, om: String, ph: Double, moisture: Double) -> Unit,
+    onSaveReport: () -> Unit,
+    onDeleteReport: (SoilReport) -> Unit,
+    onSelectSavedReport: (SoilReport) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // 0 = Camera Scan, 1 = Manual Input, 2 = Reports
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current
+
+    // 0 = Camera/Upload, 1 = Manual Input, 2 = Soil Health Dashboard, 3 = Reports History
+    var selectedTab by remember { mutableIntStateOf(if (activeReport != null) 2 else 0) }
 
     // Camera Scan States
-    val context = LocalContext.current
     var hasCameraPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
@@ -116,24 +146,27 @@ fun SoilAnalysisScreen(
 
     var isSimulatingScan by remember { mutableStateOf(false) }
     var uploadedImageUri by remember { mutableStateOf<Uri?>(null) }
-    val imagePickerLauncher = rememberLauncherForActivityResult(
+    var uploadedFileName by remember { mutableStateOf<String?>(null) }
+
+    // Upload soil analysis report file (CSV/PDF/Image)
+    val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
             uploadedImageUri = uri
+            uploadedFileName = uri.lastPathSegment ?: "soil_analysis_report.csv"
             isSimulatingScan = true
         }
     }
 
     var selectedSwatch by remember { mutableStateOf("Clay Loam") }
-    var estimatedPh by remember { mutableStateOf("6.2 (Optimal for Rice)") }
-    var moistureContent by remember { mutableStateOf("48% (Sufficient)") }
-    var npkStatus by remember { mutableStateOf("N: Low • P: Medium • K: Medium") }
+    var inputPh by remember { mutableStateOf(6.2f) }
+    var inputMoisture by remember { mutableStateOf(48.0f) }
 
-    // Target Fertilizer Recommendations (kg/ha)
-    var targetN by remember { mutableStateOf("90") }
-    var targetP by remember { mutableStateOf("30") }
-    var targetK by remember { mutableStateOf("40") }
+    // Custom PPM fields
+    var customNPpm by remember { mutableStateOf("22") }
+    var customPPpm by remember { mutableStateOf("18") }
+    var customKPpm by remember { mutableStateOf("140") }
 
     Column(
         modifier = modifier
@@ -142,7 +175,7 @@ fun SoilAnalysisScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Top Back Row
+        // Top Back Row & Header Title
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -153,17 +186,24 @@ fun SoilAnalysisScreen(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = FarmTextDark)
             }
             Text(
-                text = "Soil Analysis & Recommendation",
+                text = "Soil Health Dashboard",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = FarmTextDark,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.width(36.dp))
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color(0xFFE8F5E9))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text("AI Ready", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+            }
         }
 
-        // Header Info Card
+        // Header Info Banner
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -172,26 +212,26 @@ fun SoilAnalysisScreen(
             shape = RoundedCornerShape(16.dp)
         ) {
             Row(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.Science,
-                    contentDescription = "Flask",
+                    imageVector = Icons.Default.Analytics,
+                    contentDescription = "Analytics",
                     tint = FarmBrownHeader,
                     modifier = Modifier.size(36.dp)
                 )
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "AI Camera Soil Test & Fertilizer Target",
+                        text = "Soil Analysis & Health Dashboard",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = FarmTextDark
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Analyze soil automatically using camera chromatic sensors or input test kit data.",
+                        text = "Upload soil test data, scan chromatic samples, or enter lab metrics to view visual soil health diagnostics.",
                         fontSize = 12.sp,
                         color = FarmTextSecondary,
                         lineHeight = 16.sp
@@ -202,136 +242,60 @@ fun SoilAnalysisScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Segmented Tab Navigation Row
+        // Navigation Tabs Row (Camera/Upload | Input Form | Dashboard | History)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color(0xFFEFE8E1))
                 .border(1.dp, FarmBorder, RoundedCornerShape(12.dp))
-                .padding(4.dp)
+                .padding(3.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Tab 1: Camera Scan
-                val isTab0 = selectedTab == 0
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isTab0) Color.White else Color.Transparent)
-                        .clickable { selectedTab = 0 }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CameraAlt,
-                                contentDescription = null,
-                                tint = if (isTab0) FarmBrownHeader else FarmTextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Camera Scan",
-                                fontSize = 12.sp,
-                                fontWeight = if (isTab0) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isTab0) FarmTextDark else FarmTextSecondary
-                            )
-                        }
-                        if (isTab0) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Box(
-                                modifier = Modifier
-                                    .width(32.dp)
-                                    .height(2.dp)
-                                    .background(FarmBrownHeader)
-                            )
-                        }
-                    }
-                }
+                // Tab 0: Upload / Scan
+                TabButton(
+                    title = "Upload/Scan",
+                    icon = Icons.Default.FileUpload,
+                    isSelected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    modifier = Modifier.weight(1f)
+                )
 
-                // Tab 2: Manual Input
-                val isTab1 = selectedTab == 1
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isTab1) Color.White else Color.Transparent)
-                        .clickable { selectedTab = 1 }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = null,
-                                tint = if (isTab1) FarmBrownHeader else FarmTextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Manual Input",
-                                fontSize = 12.sp,
-                                fontWeight = if (isTab1) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isTab1) FarmTextDark else FarmTextSecondary
-                            )
-                        }
-                        if (isTab1) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Box(
-                                modifier = Modifier
-                                    .width(32.dp)
-                                    .height(2.dp)
-                                    .background(FarmBrownHeader)
-                            )
-                        }
-                    }
-                }
+                // Tab 1: Input Form
+                TabButton(
+                    title = "Lab Input",
+                    icon = Icons.Default.Edit,
+                    isSelected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    modifier = Modifier.weight(1f)
+                )
 
-                // Tab 3: Reports (0)
-                val isTab2 = selectedTab == 2
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isTab2) Color.White else Color.Transparent)
-                        .clickable { selectedTab = 2 }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.AccessTime,
-                                contentDescription = null,
-                                tint = if (isTab2) FarmBrownHeader else FarmTextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Reports (0)",
-                                fontSize = 12.sp,
-                                fontWeight = if (isTab2) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isTab2) FarmTextDark else FarmTextSecondary
-                            )
+                // Tab 2: Dashboard
+                TabButton(
+                    title = "Dashboard",
+                    icon = Icons.Default.BarChart,
+                    isSelected = selectedTab == 2,
+                    onClick = {
+                        if (activeReport == null) {
+                            onGenerate()
                         }
-                        if (isTab2) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Box(
-                                modifier = Modifier
-                                    .width(32.dp)
-                                    .height(2.dp)
-                                    .background(FarmBrownHeader)
-                            )
-                        }
-                    }
-                }
+                        selectedTab = 2
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Tab 3: History
+                TabButton(
+                    title = "History (${savedReports.size})",
+                    icon = Icons.Default.AccessTime,
+                    isSelected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
@@ -339,9 +303,7 @@ fun SoilAnalysisScreen(
 
         when (selectedTab) {
             0 -> {
-                // TAB 0: CAMERA SCAN
-
-                // Action Buttons Row (Snap Soil Photo | Upload Sample)
+                // TAB 0: CAMERA SCAN & FILE UPLOAD
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -365,15 +327,15 @@ fun SoilAnalysisScreen(
                         Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (!hasCameraPermission) "Enable Camera" else "Snap Soil Photo",
-                            fontSize = 13.sp,
+                            text = if (!hasCameraPermission) "Enable Camera" else "Snap Photo",
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
 
                     Button(
                         onClick = {
-                            imagePickerLauncher.launch("image/*")
+                            filePickerLauncher.launch("*/*")
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -382,19 +344,19 @@ fun SoilAnalysisScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                     ) {
-                        Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Upload Sample", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Upload Report/Image", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // CAMERA VIEWFINDER CONTAINER (LIVE CAMERA PREVIEW / UPLOADED SAMPLE)
+                // VIEWPORT CAMERA / FILE SCAN CONTAINER
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(240.dp)
+                        .height(230.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFF281C15))
                         .clickable {
@@ -403,18 +365,16 @@ fun SoilAnalysisScreen(
                             }
                         }
                 ) {
-                    // Background Live Camera Preview or Uploaded Sample
                     if (uploadedImageUri != null) {
                         AsyncImage(
                             model = uploadedImageUri,
-                            contentDescription = "Uploaded Soil Sample",
+                            contentDescription = "Uploaded Soil Data",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else if (hasCameraPermission) {
                         SoilCameraPreviewView(modifier = Modifier.fillMaxSize())
                     } else {
-                        // Camera Permission Request Placeholder
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -430,14 +390,14 @@ fun SoilAnalysisScreen(
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "Tap to Enable Camera Sensor",
+                                text = "Tap to Enable Camera Spectral Sensor",
                                 color = Color.White,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Live spectral soil sensor requires camera permission",
+                                text = "Or upload soil lab report PDF, CSV, or sample photo above",
                                 color = Color.White.copy(alpha = 0.7f),
                                 fontSize = 11.sp,
                                 textAlign = TextAlign.Center
@@ -445,7 +405,7 @@ fun SoilAnalysisScreen(
                         }
                     }
 
-                    // Top-Left Badge: Spectral Chromatic Sensor Active
+                    // Top Sensor Badge
                     Box(
                         modifier = Modifier
                             .padding(12.dp)
@@ -464,7 +424,7 @@ fun SoilAnalysisScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (uploadedImageUri != null) "Sample Image Sensor Active" else "Spectral Lens Sensor Active",
+                                text = if (uploadedImageUri != null) "Uploaded Report: ${uploadedFileName ?: "Sample Data"}" else "Spectral Lens Sensor Active",
                                 color = Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
@@ -472,14 +432,14 @@ fun SoilAnalysisScreen(
                         }
                     }
 
-                    // Center Reticle Viewfinder
+                    // Reticle Focus Target
                     Column(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(76.dp)
+                                .size(70.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(Color.Black.copy(alpha = 0.35f))
                                 .border(2.dp, FarmYellowAccent.copy(alpha = 0.8f), RoundedCornerShape(16.dp)),
@@ -489,27 +449,24 @@ fun SoilAnalysisScreen(
                                 imageVector = Icons.Default.CenterFocusWeak,
                                 contentDescription = "Reticle",
                                 tint = Color.White,
-                                modifier = Modifier.size(40.dp)
+                                modifier = Modifier.size(36.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = if (isSimulatingScan) "Analyzing Soil Chromatic Spectrum..." else "Align soil sample in target reticle",
+                            text = if (isSimulatingScan) "Analyzing Chromatic & Lab Test Values..." else "Align sample in target reticle",
                             color = Color.White,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         )
                     }
 
-                    // Bottom Simulate / Scan Button
+                    // Bottom Scan Action Button
                     Button(
-                        onClick = {
-                            isSimulatingScan = true
-                        },
+                        onClick = { isSimulatingScan = true },
                         enabled = !isSimulatingScan,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -521,35 +478,30 @@ fun SoilAnalysisScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A3225))
                     ) {
                         if (isSimulatingScan) {
-                            Text("Analyzing Chromatic Spectrum...", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("Analyzing Soil Health Metrics...", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                         } else {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CameraAlt, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Analytics, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Analyze Soil with Camera Sensor", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Process Soil Sample & View Dashboard", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             }
                         }
                     }
 
                     if (isSimulatingScan) {
-                        androidx.compose.runtime.LaunchedEffect(Unit) {
-                            kotlinx.coroutines.delay(1500)
+                        LaunchedEffect(Unit) {
+                            delay(1200)
                             isSimulatingScan = false
-                            onSoilTypeChange(selectedSwatch)
-                            onNitrogenChange("Low")
-                            onPhosphorusChange("Medium")
-                            onPotassiumChange("Medium")
-                            onOrganicMatterChange("2-4%")
-                            estimatedPh = "6.2 (Optimal for Rice)"
-                            moistureContent = "48% (Sufficient)"
-                            npkStatus = "N: Low • P: Medium • K: Medium"
+                            onGenerateCustom(crop, selectedSwatch, "Low", "Medium", "Medium", "2-4%", 6.2, 48.0)
+                            selectedTab = 2 // Switch to Dashboard
+                            Toast.makeText(context, "Soil Analysis Complete! Displaying Visual Dashboard.", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // PRESET SAMPLE CALIBRATION SWATCHES
+                // Calibration Swatches
                 Text(
                     text = "Preset Sample Calibration Swatches:",
                     fontSize = 13.sp,
@@ -566,7 +518,8 @@ fun SoilAnalysisScreen(
                     val swatches = listOf(
                         Triple("Clay Loam", Color(0xFF4A3225), "Clay Loam"),
                         Triple("Sandy Loam", Color(0xFF8C6246), "Sandy Loam"),
-                        Triple("Silt Clay", Color(0xFF362116), "Silt Clay")
+                        Triple("Silt Clay", Color(0xFF362116), "Silt Clay"),
+                        Triple("Peat", Color(0xFF231610), "Peat")
                     )
 
                     swatches.forEach { (name, color, typeValue) ->
@@ -585,30 +538,10 @@ fun SoilAnalysisScreen(
                                     selectedSwatch = name
                                     onSoilTypeChange(typeValue)
                                     when (name) {
-                                        "Clay Loam" -> {
-                                            estimatedPh = "6.2 (Optimal for Rice)"
-                                            moistureContent = "48% (Sufficient)"
-                                            npkStatus = "N: Low • P: Medium • K: Medium"
-                                            targetN = "90"
-                                            targetP = "30"
-                                            targetK = "40"
-                                        }
-                                        "Sandy Loam" -> {
-                                            estimatedPh = "6.8 (Neutral)"
-                                            moistureContent = "35% (Dry/Needs Irrigation)"
-                                            npkStatus = "N: Low • P: Low • K: Medium"
-                                            targetN = "110"
-                                            targetP = "45"
-                                            targetK = "50"
-                                        }
-                                        "Silt Clay" -> {
-                                            estimatedPh = "5.8 (Slightly Acidic)"
-                                            moistureContent = "52% (High Retention)"
-                                            npkStatus = "N: Medium • P: High • K: Low"
-                                            targetN = "70"
-                                            targetP = "20"
-                                            targetK = "60"
-                                        }
+                                        "Clay Loam" -> onGenerateCustom(crop, typeValue, "Low", "Medium", "Medium", "2-4%", 6.2, 48.0)
+                                        "Sandy Loam" -> onGenerateCustom(crop, typeValue, "Low", "Low", "Medium", "<2%", 6.8, 35.0)
+                                        "Silt Clay" -> onGenerateCustom(crop, typeValue, "Medium", "High", "Low", ">4%", 5.8, 52.0)
+                                        "Peat" -> onGenerateCustom(crop, typeValue, "High", "Medium", "Low", ">4%", 5.2, 60.0)
                                     }
                                 }
                                 .padding(vertical = 12.dp),
@@ -616,224 +549,51 @@ fun SoilAnalysisScreen(
                         ) {
                             Text(
                                 text = name,
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = Color.White,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // OPTICAL SOIL SENSOR ANALYSIS CARD
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, FarmBorder, RoundedCornerShape(14.dp)),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5EAE1)),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = FarmBrownHeader,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.Default.CameraAlt,
-                                contentDescription = null,
-                                tint = FarmBrownHeader,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Optical Soil Sensor Analysis",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = FarmBrownHeader
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Row 1: Detected Soil Texture
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Detected Soil Texture:", fontSize = 12.sp, color = FarmTextSecondary)
-                            Text(selectedSwatch, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Row 2: Estimated Soil pH
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Estimated Soil pH:", fontSize = 12.sp, color = FarmTextSecondary)
-                            Text(estimatedPh, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Row 3: Moisture Content
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Moisture Content:", fontSize = 12.sp, color = FarmTextSecondary)
-                            Text(moistureContent, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Row 4: N-P-K Status
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("N-P-K Status:", fontSize = 12.sp, color = FarmTextSecondary)
-                            Text(npkStatus, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // TARGET FERTILIZER RECOMMENDATION (KG/HA)
-                Text(
-                    text = "Target Fertilizer Recommendation (kg/ha)",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = FarmTextDark
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Target N
-                    OutlinedTextField(
-                        value = targetN,
-                        onValueChange = { targetN = it },
-                        label = { Text("Target N", fontSize = 11.sp) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black),
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("input_target_n"),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black,
-                            focusedBorderColor = FarmBrownHeader,
-                            unfocusedBorderColor = FarmBorder,
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
-                        )
-                    )
-
-                    // Target P₂O₅
-                    OutlinedTextField(
-                        value = targetP,
-                        onValueChange = { targetP = it },
-                        label = { Text("Target P₂O₅", fontSize = 11.sp) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black),
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("input_target_p"),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black,
-                            focusedBorderColor = FarmBrownHeader,
-                            unfocusedBorderColor = FarmBorder,
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
-                        )
-                    )
-
-                    // Target K₂O
-                    OutlinedTextField(
-                        value = targetK,
-                        onValueChange = { targetK = it },
-                        label = { Text("Target K₂O", fontSize = 11.sp) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black),
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("input_target_k"),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black,
-                            focusedBorderColor = FarmBrownHeader,
-                            unfocusedBorderColor = FarmBorder,
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White
-                        )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = onGenerate,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .testTag("btn_calculate_target_fertilizer"),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FarmBrownHeader)
-                ) {
-                    Text("GENERATE FERTILIZER BLEND RECOMMENDATION", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
             1 -> {
-                // TAB 1: MANUAL INPUT FORM
+                // TAB 1: MANUAL LAB DATA INPUT FORM
                 Column {
                     Text(
-                        text = "Manual Soil Test Kit Input",
+                        text = "Laboratory / Field Test Kit Input",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = FarmTextDark
                     )
                     Text(
-                        text = "Select values measured from laboratory or field soil testing kit.",
+                        text = "Enter measured soil N-P-K levels, pH value, and organic matter percentage.",
                         fontSize = 12.sp,
                         color = FarmTextSecondary
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    DropdownSelector(
-                        label = "Crop Type",
-                        selected = crop,
-                        options = listOf("Rice", "Corn", "Vegetables", "Sugarcane"),
-                        onSelect = onCropChange
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    DropdownSelector(
-                        label = "Soil Type",
-                        selected = soilType,
-                        options = listOf("Clay", "Loam", "Sandy", "Clay Loam"),
-                        onSelect = onSoilTypeChange
-                    )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            DropdownSelector(
+                                label = "Target Crop",
+                                selected = crop,
+                                options = listOf("Rice", "Corn", "Vegetables", "Sugarcane"),
+                                onSelect = onCropChange
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            DropdownSelector(
+                                label = "Soil Texture",
+                                selected = soilType,
+                                options = listOf("Clay", "Loam", "Sandy", "Clay Loam", "Silt Clay", "Peat"),
+                                onSelect = onSoilTypeChange
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -877,10 +637,69 @@ fun SoilAnalysisScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Soil pH Slider
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White)
+                            .border(1.dp, FarmBorder, RoundedCornerShape(12.dp))
+                            .padding(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Soil pH Level: ${String.format("%.1f", inputPh)}",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = FarmTextDark
+                            )
+                            val phStatus = when {
+                                inputPh < 5.8 -> "Acidic"
+                                inputPh in 5.8..7.2 -> "Optimal"
+                                else -> "Alkaline"
+                            }
+                            Text(
+                                text = phStatus,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (phStatus == "Optimal") Color(0xFF2E7D32) else Color(0xFFE65100)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Slider(
+                            value = inputPh,
+                            onValueChange = { inputPh = it },
+                            valueRange = 4.0f..9.0f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = FarmBrownHeader,
+                                activeTrackColor = FarmBrownHeader,
+                                inactiveTrackColor = FarmBorder
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = onGenerate,
+                        onClick = {
+                            onGenerateCustom(
+                                crop,
+                                soilType,
+                                nitrogen,
+                                phosphorus,
+                                potassium,
+                                organicMatter,
+                                inputPh.toDouble(),
+                                inputMoisture.toDouble()
+                            )
+                            selectedTab = 2 // Switch to Dashboard
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
@@ -888,114 +707,680 @@ fun SoilAnalysisScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = FarmBrownHeader)
                     ) {
-                        Text("GENERATE RECOMMENDATIONS", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Icon(Icons.Default.Analytics, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("GENERATE VISUAL DASHBOARD", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
 
             2 -> {
-                // TAB 2: REPORTS (HISTORY)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AccessTime,
-                        contentDescription = null,
-                        tint = FarmTextSecondary,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                // TAB 2: VISUAL SOIL HEALTH DASHBOARD
+                SoilHealthDashboardView(
+                    report = activeReport,
+                    onSaveReport = {
+                        onSaveReport()
+                        Toast.makeText(context, "Soil report saved to history!", Toast.LENGTH_SHORT).show()
+                    },
+                    onExportPdf = {
+                        if (activeReport != null) {
+                            PdfExportHelper.printSoilReport(context, activeReport)
+                        } else {
+                            Toast.makeText(context, "No report available to export", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+
+            3 -> {
+                // TAB 3: REPORTS HISTORY
+                Column {
                     Text(
-                        text = "No Saved Soil Test Reports Yet",
+                        text = "Saved Soil Analysis Reports (${savedReports.size})",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = FarmTextDark
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Scan or enter soil test data to generate and save your field nutrient history.",
-                        fontSize = 12.sp,
-                        color = FarmTextSecondary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
-                }
-            }
-        }
+                    Spacer(modifier = Modifier.height(10.dp))
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // DISPLAY GENERATED RECOMMENDATIONS IF AVAILABLE
-        recommendation?.let { rec ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, FarmBrownHeader, RoundedCornerShape(16.dp)),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Field Recommendation Summary",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = FarmBrownHeader
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = rec.summary,
-                        fontSize = 13.sp,
-                        color = FarmTextSecondary
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = "Specific Recommendations:",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = FarmTextDark
-                    )
-                    rec.recommendations.forEach { item ->
-                        Row(modifier = Modifier.padding(vertical = 3.dp)) {
+                    if (savedReports.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Icon(
-                                imageVector = Icons.Default.CheckCircle,
+                                imageVector = Icons.Default.AccessTime,
                                 contentDescription = null,
-                                tint = FarmBrownHeader,
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .padding(top = 2.dp)
+                                tint = FarmTextSecondary,
+                                modifier = Modifier.size(48.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(text = item, fontSize = 13.sp, color = FarmTextDark)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "No Saved Soil Test Reports Yet",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = FarmTextDark
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Run a soil analysis scan or lab input to save your field nutrient history.",
+                                fontSize = 12.sp,
+                                color = FarmTextSecondary,
+                                textAlign = TextAlign.Center
+                            )
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = "Application Split Schedule:",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = FarmTextDark
-                    )
-                    rec.applicationSchedule.forEach { step ->
-                        Text(
-                            text = "• $step",
-                            fontSize = 13.sp,
-                            color = FarmBrownHeader,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(vertical = 2.dp)
-                        )
+                    } else {
+                        savedReports.forEach { rep ->
+                            SavedReportCard(
+                                report = rep,
+                                onViewDashboard = {
+                                    onSelectSavedReport(rep)
+                                    selectedTab = 2
+                                },
+                                onDelete = { onDeleteReport(rep) }
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
                     }
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun TabButton(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (isSelected) Color.White else Color.Transparent)
+            .clickable { onClick() }
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isSelected) FarmBrownHeader else FarmTextSecondary,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = title,
+                fontSize = 10.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) FarmTextDark else FarmTextSecondary,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun SoilHealthDashboardView(
+    report: SoilReport?,
+    onSaveReport: () -> Unit,
+    onExportPdf: () -> Unit
+) {
+    if (report == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("No soil analysis data available. Please run input or scan first.")
+        }
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // OVERALL SOIL HEALTH INDEX (SHI) SCORE CARD
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, FarmBorder, RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Speed,
+                            contentDescription = null,
+                            tint = FarmBrownHeader,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Soil Health Index (SHI)",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmTextDark
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(
+                                if (report.healthScore >= 80) Color(0xFFE8F5E9)
+                                else if (report.healthScore >= 65) Color(0xFFFFF3E0)
+                                else Color(0xFFFFEBEE)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = report.healthStatus,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (report.healthScore >= 80) Color(0xFF2E7D32)
+                            else if (report.healthScore >= 65) Color(0xFFE65100)
+                            else Color(0xFFC62828)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Score Circular / Meter Visual Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Score Gauge Dial
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    listOf(
+                                        if (report.healthScore >= 80) Color(0xFF81C784) else Color(0xFFFFB74D),
+                                        if (report.healthScore >= 80) Color(0xFF2E7D32) else Color(0xFFE65100)
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${report.healthScore}",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "/100",
+                                fontSize = 10.sp,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Crop: ${report.crop} | Soil: ${report.soilType}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmTextDark
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = report.summary,
+                            fontSize = 12.sp,
+                            color = FarmTextSecondary,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        // NUTRIENT LEVEL VISUAL METERS (N, P, K)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, FarmBorder, RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Nutrient Level Breakdown (N-P-K)",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmTextDark
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Nitrogen Meter
+                NutrientMeterRow(
+                    label = "Nitrogen (N)",
+                    level = report.nitrogenLevel,
+                    ppm = "${report.nitrogenPpm} ppm",
+                    fraction = if (report.nitrogenLevel == "High") 0.9f else if (report.nitrogenLevel == "Medium") 0.6f else 0.25f,
+                    color = if (report.nitrogenLevel == "Low") Color(0xFFE53935) else Color(0xFF43A047)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Phosphorus Meter
+                NutrientMeterRow(
+                    label = "Phosphorus (P)",
+                    level = report.phosphorusLevel,
+                    ppm = "${report.phosphorusPpm} ppm",
+                    fraction = if (report.phosphorusLevel == "High") 0.9f else if (report.phosphorusLevel == "Medium") 0.65f else 0.3f,
+                    color = if (report.phosphorusLevel == "Low") Color(0xFFFB8C00) else Color(0xFF43A047)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Potassium Meter
+                NutrientMeterRow(
+                    label = "Potassium (K)",
+                    level = report.potassiumLevel,
+                    ppm = "${report.potassiumPpm} ppm",
+                    fraction = if (report.potassiumLevel == "High") 0.95f else if (report.potassiumLevel == "Medium") 0.7f else 0.35f,
+                    color = if (report.potassiumLevel == "Low") Color(0xFFFB8C00) else Color(0xFF43A047)
+                )
+            }
+        }
+
+        // INTERACTIVE SOIL pH SPECTRUM GAUGE
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, FarmBorder, RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Soil pH Spectrum Gauge",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = FarmTextDark
+                    )
+                    Text(
+                        text = "${report.phValue} pH",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = FarmBrownHeader
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Spectrum Bar
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(18.dp)
+                        .clip(RoundedCornerShape(9.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    Color(0xFFE53935), // 4.0 Acidic
+                                    Color(0xFFFB8C00), // 5.5
+                                    Color(0xFF43A047), // 6.5 Neutral
+                                    Color(0xFF1E88E5), // 7.5
+                                    Color(0xFF8E24AA)  // 9.0 Alkaline
+                                )
+                            )
+                        )
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("4.0 (Acidic)", fontSize = 10.sp, color = FarmTextSecondary)
+                    Text("6.5 (Optimal)", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                    Text("9.0 (Alkaline)", fontSize = 10.sp, color = FarmTextSecondary)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = if (report.phValue in 5.8..7.2) "✅ Optimal pH balance for ${report.crop}. Nutrient availability is maximized."
+                    else if (report.phValue < 5.8) "⚠️ Acidic Soil: Lime application recommended to raise pH towards 6.5."
+                    else "⚠️ Alkaline Soil: Gypsum or Ammonium Sulfate recommended to reduce pH.",
+                    fontSize = 11.sp,
+                    color = FarmTextDark,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        // ORGANIC MATTER & MOISTURE GAUGES
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .border(1.dp, FarmBorder, RoundedCornerShape(14.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5EAE1)),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Grass, contentDescription = null, tint = FarmBrownHeader, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Organic Matter", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("${report.organicMatterPct}%", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = FarmBrownHeader)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LinearProgressIndicator(
+                        progress = { (report.organicMatterPct / 5.0).toFloat().coerceIn(0f, 1f) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = FarmBrownHeader,
+                        trackColor = Color.White
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .border(1.dp, FarmBorder, RoundedCornerShape(14.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.WaterDrop, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Soil Moisture", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("${report.moisturePct}%", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF2E7D32))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LinearProgressIndicator(
+                        progress = { (report.moisturePct / 100.0).toFloat().coerceIn(0f, 1f) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = Color(0xFF2E7D32),
+                        trackColor = Color.White
+                    )
+                }
+            }
+        }
+
+        // CROP SUITABILITY INDEX
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, FarmBorder, RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Crop Suitability Index",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmTextDark
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                val crops = listOf(
+                    "Rice" to 92,
+                    "Corn" to 78,
+                    "Vegetables" to 85,
+                    "Sugarcane" to 80
+                )
+
+                crops.forEach { (cName, pct) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(cName, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(90.dp), color = FarmTextDark)
+                        LinearProgressIndicator(
+                            progress = { pct / 100f },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            color = if (pct >= 85) Color(0xFF2E7D32) else Color(0xFFFB8C00),
+                            trackColor = Color(0xFFE0E0E0)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("$pct%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
+                    }
+                }
+            }
+        }
+
+        // RECOMMENDATIONS & APPLICATION SCHEDULE
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, FarmBrownHeader, RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Field Corrective Action Plan:",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmBrownHeader
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                report.recommendations.forEach { item ->
+                    Row(modifier = Modifier.padding(vertical = 3.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = FarmBrownHeader,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .padding(top = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = item, fontSize = 12.sp, color = FarmTextDark)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Application Split Schedule:",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmTextDark
+                )
+                report.applicationSchedule.forEach { step ->
+                    Text(
+                        text = "• $step",
+                        fontSize = 12.sp,
+                        color = FarmBrownHeader,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
+            }
+        }
+
+        // ACTION BUTTONS ROW (Save to History | Export PDF)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Button(
+                onClick = onSaveReport,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(46.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+            ) {
+                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Save Report", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Button(
+                onClick = onExportPdf,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(46.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FarmBrownHeader)
+            ) {
+                Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Export PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+fun NutrientMeterRow(
+    label: String,
+    level: String,
+    ppm: String,
+    fraction: Float,
+    color: Color
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = FarmTextDark)
+            Text("$level ($ppm)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+            progress = { fraction.coerceIn(0f, 1f) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
+            color = color,
+            trackColor = Color(0xFFE0E0E0)
+        )
+    }
+}
+
+@Composable
+fun SavedReportCard(
+    report: SoilReport,
+    onViewDashboard: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, FarmBorder, RoundedCornerShape(14.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "${report.crop} Field — ${report.soilType}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = FarmTextDark
+                    )
+                    Text(
+                        text = report.dateFormatted,
+                        fontSize = 11.sp,
+                        color = FarmTextSecondary
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (report.healthScore >= 80) Color(0xFFE8F5E9) else Color(0xFFFFF3E0))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Index: ${report.healthScore}/100",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (report.healthScore >= 80) Color(0xFF2E7D32) else Color(0xFFE65100)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "N: ${report.nitrogenLevel} • P: ${report.phosphorusLevel} • K: ${report.potassiumLevel} | pH ${report.phValue}",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = FarmBrownHeader
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = onViewDashboard,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = FarmBrownHeader),
+                    modifier = Modifier.height(34.dp)
+                ) {
+                    Text("View Dashboard", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
     }
 }
 
@@ -1009,12 +1394,12 @@ fun DropdownSelector(
     var expanded by remember { mutableStateOf(false) }
 
     Column {
-        Text(text = label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = FarmTextDark)
+        Text(text = label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = FarmTextDark)
         Spacer(modifier = Modifier.height(4.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp)
+                .height(46.dp)
                 .clip(RoundedCornerShape(10.dp))
                 .background(Color.White)
                 .border(1.dp, FarmBorder, RoundedCornerShape(10.dp))
@@ -1027,14 +1412,14 @@ fun DropdownSelector(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = selected, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Text(text = selected, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                 Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.Black)
             }
 
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(option, fontSize = 14.sp) },
+                        text = { Text(option, fontSize = 13.sp) },
                         onClick = {
                             onSelect(option)
                             expanded = false
@@ -1061,13 +1446,13 @@ fun SoilCameraPreviewView(modifier: Modifier = Modifier) {
                     imageVector = Icons.Default.CameraAlt,
                     contentDescription = "Soil Scanner",
                     tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(44.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Soil Camera Sensor Ready",
                     color = Color.White,
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
@@ -1121,4 +1506,3 @@ fun SoilCameraPreviewView(modifier: Modifier = Modifier) {
         )
     }
 }
-

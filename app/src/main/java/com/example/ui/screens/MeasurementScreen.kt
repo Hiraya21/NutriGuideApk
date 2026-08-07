@@ -34,12 +34,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.LocationOn
@@ -47,6 +54,8 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -71,7 +80,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -115,11 +126,16 @@ fun MeasurementScreen(
     gpsAccuracy: String,
     currentLocation: MapPoint? = null,
     currentLanguage: AppLanguage = AppLanguage.ENGLISH,
+    restoredNotice: String? = null,
+    onDismissRestoredNotice: (() -> Unit)? = null,
     onLocationPermissionGranted: () -> Unit = {},
     onCropChange: (String) -> Unit,
     onStartTracking: () -> Unit,
     onPauseTracking: () -> Unit,
     onMarkPoint: () -> Unit,
+    onUndoPoint: () -> Unit = {},
+    onClearPoints: () -> Unit = {},
+    onDeletePointAt: (Int) -> Unit = {},
     onAddPointAt: (Double, Double) -> Unit,
     onSaveFarm: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -173,6 +189,7 @@ fun MeasurementScreen(
 
     // Adjustable Camera Size State (160dp, 220dp, 300dp, 380dp)
     var cameraHeightDp by rememberSaveable { mutableStateOf(200) }
+    var isCameraFullScreen by rememberSaveable { mutableStateOf(false) }
 
     // Device-to-Device Mark Point State
     var secondDeviceCodeInput by rememberSaveable { mutableStateOf("") }
@@ -231,6 +248,57 @@ fun MeasurementScreen(
                     tint = FarmGreenPrimary,
                     modifier = Modifier.size(26.dp)
                 )
+            }
+        }
+
+        // AUTOSAVE RESTORED BANNER
+        if (restoredNotice != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF81C784))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Color(0xFF2E7D32),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "⚡ Progress Autosaved & Restored",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF1B5E20)
+                            )
+                            Text(
+                                text = restoredNotice,
+                                fontSize = 11.sp,
+                                color = FarmTextDark
+                            )
+                        }
+                    }
+                    TextButton(
+                        onClick = { onDismissRestoredNotice?.invoke() }
+                    ) {
+                        Text("OK", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                    }
+                }
             }
         }
 
@@ -299,8 +367,11 @@ fun MeasurementScreen(
                 Text("Camera Frame Size", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FarmGreenHeader)
             }
 
-            // Size Selector Chips
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            // Size Selector Chips + Fullscreen Button
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 listOf(160, 220, 300, 380).forEach { size ->
                     val isSel = cameraHeightDp == size
                     Box(
@@ -319,6 +390,31 @@ fun MeasurementScreen(
                         )
                     }
                 }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFFE8F5E9))
+                        .clickable { isCameraFullScreen = true }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .testTag("cam_size_full")
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Fullscreen,
+                            contentDescription = "Full Screen",
+                            tint = FarmGreenHeader,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = "Full",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmGreenHeader
+                        )
+                    }
+                }
             }
         }
 
@@ -334,6 +430,12 @@ fun MeasurementScreen(
         ) {
             if (hasCameraPermission) {
                 CameraPreviewView()
+                // AR Walking Pathway Overlay
+                ArWalkingPathwayOverlay(
+                    isTracking = isTracking,
+                    pointCount = boundaryPoints.size,
+                    walkingDistanceMeters = walkingMeters
+                )
             } else {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -366,29 +468,190 @@ fun MeasurementScreen(
                     .padding(horizontal = 8.dp, vertical = 4.dp)
                     .align(Alignment.TopStart)
             ) {
-                Text(
-                    text = "Sensor Preview (${cameraHeightDp}dp)",
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(if (isTracking) Color(0xFF00E676) else Color.Yellow)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Sensor AR View (${cameraHeightDp}dp)",
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
-            // Top-right Point count badge
-            Box(
+            // Top-right Controls: Point count badge + Fullscreen Icon Button
+            Row(
                 modifier = Modifier
                     .padding(10.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .align(Alignment.TopEnd)
+                    .align(Alignment.TopEnd),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "${boundaryPoints.size} pts",
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "${boundaryPoints.size} pts",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                IconButton(
+                    onClick = { isCameraFullScreen = true },
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black.copy(alpha = 0.7f))
+                        .testTag("btn_expand_fullscreen_cam")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Fullscreen,
+                        contentDescription = "Fullscreen Camera",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+
+        // FULLSCREEN CAMERA DIALOG MODE
+        if (isCameraFullScreen) {
+            Dialog(
+                onDismissRequest = { isCameraFullScreen = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                ) {
+                    if (hasCameraPermission) {
+                        CameraPreviewView()
+                        ArWalkingPathwayOverlay(
+                            isTracking = isTracking,
+                            pointCount = boundaryPoints.size,
+                            walkingDistanceMeters = walkingMeters
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Camera Active Sensor in Fullscreen", color = Color.White)
+                        }
+                    }
+
+                    // Top Bar Controls in Fullscreen
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 40.dp, start = 16.dp, end = 16.dp)
+                            .align(Alignment.TopStart),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.Black.copy(alpha = 0.8f))
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(RoundedCornerShape(5.dp))
+                                        .background(if (isTracking) Color(0xFF00E676) else Color.Yellow)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "AR CAMERA FULLSCREEN",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "${boundaryPoints.size} Points | Path: ${String.format("%.1f", walkingMeters)}m",
+                                        color = Color(0xFF00E676),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+
+                        IconButton(
+                            onClick = { isCameraFullScreen = false },
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(21.dp))
+                                .background(Color.Black.copy(alpha = 0.8f))
+                                .testTag("btn_exit_fullscreen_camera")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FullscreenExit,
+                                contentDescription = "Exit Fullscreen",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
+                    // Floating Action Row in Fullscreen Camera
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                            .align(Alignment.BottomCenter),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = onMarkPoint,
+                            modifier = Modifier
+                                .weight(1.5f)
+                                .height(52.dp)
+                                .testTag("btn_fs_mark_point"),
+                            colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = Color.White)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Mark Point Here", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+
+                        if (boundaryPoints.isNotEmpty()) {
+                            Button(
+                                onClick = onUndoPoint,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(52.dp)
+                                    .testTag("btn_fs_undo_point"),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = Color.White)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Undo", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -461,12 +724,107 @@ fun MeasurementScreen(
             currentLocation = currentLocation,
             remoteLocation = remoteDevicePoint,
             onAddPoint = onAddPointAt,
+            onMarkCurrentGpsPoint = onMarkPoint,
+            onUndoPoint = onUndoPoint,
+            onClearPoints = onClearPoints,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(210.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .border(1.dp, FarmBorder, RoundedCornerShape(16.dp))
         )
+
+        // RECORDED POINTS QUICK STRIP (SIMPLE POINT MANAGEMENT)
+        if (boundaryPoints.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, FarmBorder, RoundedCornerShape(12.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA))
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(FarmGreenHeader)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Recorded Boundary Points (${boundaryPoints.size})",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = FarmGreenHeader
+                            )
+                        }
+
+                        TextButton(
+                            onClick = onClearPoints,
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text("Clear All", fontSize = 11.sp, color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(boundaryPoints.size) { index ->
+                            val pt = boundaryPoints[index]
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color.White)
+                                    .border(1.dp, FarmBorder, RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(FarmGreenHeader),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("${index + 1}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "${String.format("%.4f", pt.lat)}, ${String.format("%.4f", pt.lng)}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = FarmTextDark
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    IconButton(
+                                        onClick = { onDeletePointAt(index) },
+                                        modifier = Modifier.size(22.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Delete Point ${index + 1}",
+                                            tint = Color(0xFFD32F2F),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -589,32 +947,123 @@ fun MeasurementScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // TRACKING STATUS INDICATOR BANNER
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp)
+                .clip(RoundedCornerShape(12.dp)),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isTracking && !isPaused) Color(0xFFE8F5E9)
+                else if (isPaused) Color(0xFFFFF3E0)
+                else Color(0xFFF3F4F6)
+            ),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (isTracking && !isPaused) Color(0xFF81C784)
+                else if (isPaused) Color(0xFFFFB74D)
+                else FarmBorder
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(
+                                if (isTracking && !isPaused) Color(0xFF2E7D32)
+                                else if (isPaused) Color(0xFFEF6C00)
+                                else Color.Gray
+                            )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = if (isTracking && !isPaused) {
+                                when (currentLanguage) {
+                                    AppLanguage.ENGLISH -> "● LIVE TRACKING ACTIVE"
+                                    AppLanguage.TAGALOG -> "● AKTIBONG PAGSUKAT"
+                                    AppLanguage.TAGLISH -> "● LIVE TRACKING ACTIVE"
+                                    AppLanguage.ILOCANO -> "● NAGARAMID NGA RUKOD"
+                                    AppLanguage.CEBUANO -> "● AKTIBO ANG PAGSUKOD"
+                                }
+                            } else if (isPaused) {
+                                "⏸ TRACKING PAUSED"
+                            } else {
+                                " READY TO MEASURE"
+                            },
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isTracking && !isPaused) Color(0xFF1B5E20)
+                            else if (isPaused) Color(0xFFE65100)
+                            else FarmTextDark
+                        )
+                        Text(
+                            text = if (isTracking && !isPaused) {
+                                "Walking pathway recording live GPS boundary..."
+                            } else if (isPaused) {
+                                "Paused. Tap Resume to continue walking."
+                            } else {
+                                "Tap Start Walk to begin recording farm pathway."
+                            },
+                            fontSize = 10.sp,
+                            color = FarmTextSecondary
+                        )
+                    }
+                }
+
+                if (isTracking && !isPaused) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF2E7D32))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("WALKING", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
         // Buttons Row: Start | Pause | Finish
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Start Button
+            // Start / Dynamic Tracking Button
             Button(
                 onClick = onStartTracking,
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1.2f)
                     .height(48.dp)
                     .testTag("btn_start_measurement"),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = FarmGreenPrimary,
+                    containerColor = if (isTracking && !isPaused) Color(0xFF1B5E20) else FarmGreenPrimary,
                     contentColor = Color.White
                 )
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.PlayArrow,
+                        imageVector = if (isTracking && !isPaused) Icons.Default.DirectionsWalk else Icons.Default.PlayArrow,
                         contentDescription = "Start",
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Start", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (isTracking && !isPaused) "Recording..."
+                        else if (isPaused) "Resume Walk"
+                        else "Start Walk",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
                 }
             }
 
@@ -664,30 +1113,200 @@ fun MeasurementScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Mark Point Here Button
-        OutlinedButton(
-            onClick = onMarkPoint,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .testTag("btn_mark_point"),
-            shape = RoundedCornerShape(10.dp)
+        // MEASURING TOOLS CONTROL BAR
+        Text(
+            text = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "Measuring Tools"
+                AppLanguage.TAGALOG -> "Mga Tool sa Pagsusukat"
+                AppLanguage.TAGLISH -> "Measurement Tools"
+                AppLanguage.ILOCANO -> "Rukod nga Ramit"
+                AppLanguage.CEBUANO -> "Mga Himan sa Pagsukod"
+            },
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = FarmGreenHeader
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Row 1: Mark Point | Undo | Delete Buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = "Mark Point",
-                    tint = FarmGreenPrimary,
-                    modifier = Modifier.size(20.dp)
+            // Mark Point Button
+            Button(
+                onClick = onMarkPoint,
+                modifier = Modifier
+                    .weight(1.3f)
+                    .height(46.dp)
+                    .testTag("btn_mark_point"),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "Mark Point",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "Mark Point"
+                            AppLanguage.TAGALOG -> "Markahan"
+                            AppLanguage.TAGLISH -> "Mark Point"
+                            AppLanguage.ILOCANO -> "Isuat"
+                            AppLanguage.CEBUANO -> "Markahi"
+                        },
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            // Undo Button
+            OutlinedButton(
+                onClick = onUndoPoint,
+                enabled = boundaryPoints.isNotEmpty(),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(46.dp)
+                    .testTag("btn_undo_point"),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Undo,
+                        contentDescription = "Undo",
+                        tint = if (boundaryPoints.isNotEmpty()) Color(0xFF1976D2) else Color.Gray,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "Undo"
+                            AppLanguage.TAGALOG -> "I-undo"
+                            AppLanguage.TAGLISH -> "Undo"
+                            AppLanguage.ILOCANO -> "Isubli"
+                            AppLanguage.CEBUANO -> "I-undo"
+                        },
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = if (boundaryPoints.isNotEmpty()) Color(0xFF1976D2) else Color.Gray
+                    )
+                }
+            }
+
+            // Delete / Clear All Button
+            OutlinedButton(
+                onClick = onClearPoints,
+                enabled = boundaryPoints.isNotEmpty(),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(46.dp)
+                    .testTag("btn_delete_points"),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFD32F2F)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Mark Point Here",
-                    fontWeight = FontWeight.Bold,
-                    color = FarmGreenPrimary
-                )
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "Delete",
+                        tint = if (boundaryPoints.isNotEmpty()) Color(0xFFD32F2F) else Color.Gray,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "Delete"
+                            AppLanguage.TAGALOG -> "Burahin"
+                            AppLanguage.TAGLISH -> "Delete"
+                            AppLanguage.ILOCANO -> "Pukawen"
+                            AppLanguage.CEBUANO -> "I-delete"
+                        },
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = if (boundaryPoints.isNotEmpty()) Color(0xFFD32F2F) else Color.Gray
+                    )
+                }
+            }
+        }
+
+        // Row 2: Marked Points List with individual Deletion buttons
+        if (boundaryPoints.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, FarmBorder, RoundedCornerShape(12.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFB))
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Boundary Points (${boundaryPoints.size})",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmTextDark
+                        )
+                        TextButton(
+                            onClick = onClearPoints,
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                        ) {
+                            Text("Clear All", fontSize = 11.sp, color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(boundaryPoints.size) { idx ->
+                            val pt = boundaryPoints[idx]
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.White)
+                                    .border(1.dp, FarmBorder, RoundedCornerShape(16.dp))
+                                    .padding(start = 10.dp, top = 2.dp, end = 2.dp, bottom = 2.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Pt ${idx + 1}: ${String.format("%.4f", pt.lat)}, ${String.format("%.4f", pt.lng)}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = FarmTextDark
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    IconButton(
+                                        onClick = { onDeletePointAt(idx) },
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .testTag("btn_delete_point_$idx")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Delete Point",
+                                            tint = Color(0xFFD32F2F),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -790,6 +1409,78 @@ fun MeasurementScreen(
 }
 
 @Composable
+fun ArWalkingPathwayOverlay(
+    isTracking: Boolean,
+    pointCount: Int,
+    walkingDistanceMeters: Double,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+
+        // Draw glowing perspective pathway guide on camera surface
+        val path = Path().apply {
+            moveTo(w * 0.35f, h)
+            lineTo(w * 0.45f, h * 0.45f)
+            lineTo(w * 0.55f, h * 0.45f)
+            lineTo(w * 0.65f, h)
+            close()
+        }
+
+        drawPath(
+            path = path,
+            color = Color(0x2200E676)
+        )
+
+        // Pathway outer boundary lines
+        drawLine(
+            color = Color(0xFF00E676),
+            start = Offset(w * 0.35f, h),
+            end = Offset(w * 0.45f, h * 0.45f),
+            strokeWidth = 5f
+        )
+        drawLine(
+            color = Color(0xFF00E676),
+            start = Offset(w * 0.65f, h),
+            end = Offset(w * 0.55f, h * 0.45f),
+            strokeWidth = 5f
+        )
+
+        // Walking path step markers
+        for (i in 1..4) {
+            val ratio = i / 5.0f
+            val y = h * (1f - ratio * 0.55f)
+            val leftX = w * (0.35f + ratio * 0.10f)
+            val rightX = w * (0.65f - ratio * 0.10f)
+            drawLine(
+                color = Color(0xBB00E676),
+                start = Offset(leftX, y),
+                end = Offset(rightX, y),
+                strokeWidth = 3f,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
+            )
+        }
+
+        // Center reticle/crosshair
+        val centerX = w * 0.5f
+        val centerY = h * 0.45f
+        drawLine(
+            color = Color.White.copy(alpha = 0.85f),
+            start = Offset(centerX - 24f, centerY),
+            end = Offset(centerX + 24f, centerY),
+            strokeWidth = 3.5f
+        )
+        drawLine(
+            color = Color.White.copy(alpha = 0.85f),
+            start = Offset(centerX, centerY - 24f),
+            end = Offset(centerX, centerY + 24f),
+            strokeWidth = 3.5f
+        )
+    }
+}
+
+@Composable
 fun CameraPreviewView() {
     val lifecycleOwner = LocalLifecycleOwner.current
     var isCameraAvailable by remember { mutableStateOf(true) }
@@ -867,12 +1558,117 @@ fun CameraPreviewView() {
     }
 }
 
+// Helper functions for custom high-contrast Map Markers
+fun createExactLocationMarkerDrawable(context: Context): android.graphics.drawable.BitmapDrawable {
+    val density = context.resources.displayMetrics.density
+    val sizePx = (52 * density).toInt()
+    val bitmap = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+
+    val cx = sizePx / 2f
+    val cy = sizePx / 2f
+
+    // 1. Translucent outer radar accuracy glow ring
+    val outerPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#3500E676")
+        style = android.graphics.Paint.Style.FILL
+    }
+    canvas.drawCircle(cx, cy, sizePx * 0.48f, outerPaint)
+
+    // 2. Outer sharp precision ring
+    val ringPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#00E676")
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 3f * density
+    }
+    canvas.drawCircle(cx, cy, sizePx * 0.38f, ringPaint)
+
+    // 3. Contrast white ring
+    val whitePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = android.graphics.Paint.Style.FILL
+    }
+    canvas.drawCircle(cx, cy, sizePx * 0.28f, whitePaint)
+
+    // 4. Center deep blue GPS core dot
+    val corePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#1565C0")
+        style = android.graphics.Paint.Style.FILL
+    }
+    canvas.drawCircle(cx, cy, sizePx * 0.18f, corePaint)
+
+    // 5. White crosshair reticle ticks
+    val crosshairPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 2.5f * density
+    }
+    canvas.drawLine(cx - sizePx * 0.38f, cy, cx - sizePx * 0.24f, cy, crosshairPaint)
+    canvas.drawLine(cx + sizePx * 0.24f, cy, cx + sizePx * 0.38f, cy, crosshairPaint)
+    canvas.drawLine(cx, cy - sizePx * 0.38f, cx, cy - sizePx * 0.24f, crosshairPaint)
+    canvas.drawLine(cx, cy + sizePx * 0.24f, cx, cy + sizePx * 0.38f, crosshairPaint)
+
+    return android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
+}
+
+fun createBoundaryPointMarkerDrawable(context: Context, pointNum: Int): android.graphics.drawable.BitmapDrawable {
+    val density = context.resources.displayMetrics.density
+    val widthPx = (32 * density).toInt()
+    val heightPx = (42 * density).toInt()
+    val bitmap = android.graphics.Bitmap.createBitmap(widthPx, heightPx, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+
+    val cx = widthPx / 2f
+    val cy = widthPx / 2f
+    val radius = widthPx * 0.42f
+
+    val circlePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#2E7D32")
+        style = android.graphics.Paint.Style.FILL
+    }
+    canvas.drawCircle(cx, cy, radius, circlePaint)
+
+    val borderPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 2.5f * density
+    }
+    canvas.drawCircle(cx, cy, radius, borderPaint)
+
+    val path = android.graphics.Path().apply {
+        moveTo(cx - radius * 0.6f, cy + radius * 0.5f)
+        lineTo(cx + radius * 0.6f, cy + radius * 0.5f)
+        lineTo(cx, heightPx.toFloat() - 2f)
+        close()
+    }
+    val tipPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#2E7D32")
+        style = android.graphics.Paint.Style.FILL
+    }
+    canvas.drawPath(path, tipPaint)
+
+    val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        textSize = 12f * density
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+        textAlign = android.graphics.Paint.Align.CENTER
+    }
+    val fontMetrics = textPaint.fontMetrics
+    val textY = cy - (fontMetrics.ascent + fontMetrics.descent) / 2f
+    canvas.drawText("$pointNum", cx, textY, textPaint)
+
+    return android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
+}
+
 @Composable
 fun FarmMapView(
     points: List<MapPoint>,
     currentLocation: MapPoint? = null,
     remoteLocation: MapPoint? = null,
     onAddPoint: (Double, Double) -> Unit,
+    onMarkCurrentGpsPoint: (() -> Unit)? = null,
+    onUndoPoint: (() -> Unit)? = null,
+    onClearPoints: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var mapViewRef by remember { mutableStateOf<MapView?>(null) }
@@ -926,7 +1722,10 @@ fun FarmMapView(
 
                     val eventsReceiver = object : MapEventsReceiver {
                         override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                            p?.let { onAddPoint(it.latitude, it.longitude) }
+                            p?.let {
+                                onAddPoint(it.latitude, it.longitude)
+                                Toast.makeText(ctx, "Point added at tapped position", Toast.LENGTH_SHORT).show()
+                            }
                             return true
                         }
                         override fun longPressHelper(p: GeoPoint?): Boolean = false
@@ -953,15 +1752,29 @@ fun FarmMapView(
                 if (points.isNotEmpty()) {
                     val geoPoints = points.map { GeoPoint(it.lat, it.lng) }
 
-                    // Clean outline without heavy green filled polygon overlay
                     if (geoPoints.size >= 2) {
                         val polylinePoints = if (geoPoints.size >= 3) geoPoints + geoPoints.first() else geoPoints
                         val polyline = Polyline(mapView).apply {
                             setPoints(polylinePoints)
-                            outlinePaint.color = android.graphics.Color.parseColor("#1B5E20")
-                            outlinePaint.strokeWidth = 5f
+                            outlinePaint.color = android.graphics.Color.parseColor("#2E7D32")
+                            outlinePaint.strokeWidth = 8f
                         }
                         mapView.overlays.add(polyline)
+                    }
+
+                    // Active live walking pathway connection line from last recorded point to current location
+                    if (currentLocation != null && points.isNotEmpty()) {
+                        val lastPoint = points.last()
+                        val walkLinePoints = listOf(
+                            GeoPoint(lastPoint.lat, lastPoint.lng),
+                            GeoPoint(currentLocation.lat, currentLocation.lng)
+                        )
+                        val walkPolyline = Polyline(mapView).apply {
+                            setPoints(walkLinePoints)
+                            outlinePaint.color = android.graphics.Color.parseColor("#1976D2")
+                            outlinePaint.strokeWidth = 6f
+                        }
+                        mapView.overlays.add(walkPolyline)
                     }
 
                     points.forEachIndexed { idx, pt ->
@@ -969,19 +1782,21 @@ fun FarmMapView(
                             position = GeoPoint(pt.lat, pt.lng)
                             title = "Point ${idx + 1}"
                             snippet = "${String.format("%.5f", pt.lat)}, ${String.format("%.5f", pt.lng)}"
+                            icon = createBoundaryPointMarkerDrawable(context, idx + 1)
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         }
                         mapView.overlays.add(marker)
                     }
                 }
 
-                // Current GPS Location Marker
+                // Current GPS Location Marker with Custom Icon
                 currentLocation?.let { curr ->
                     val currGeo = GeoPoint(curr.lat, curr.lng)
                     val userMarker = Marker(mapView).apply {
                         position = currGeo
                         title = "Your Exact GPS Location"
                         snippet = "Lat: ${String.format("%.5f", curr.lat)}, Lng: ${String.format("%.5f", curr.lng)}"
+                        icon = createExactLocationMarkerDrawable(context)
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     }
                     mapView.overlays.add(userMarker)
@@ -1003,7 +1818,40 @@ fun FarmMapView(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Map controls: Map type switcher
+        // Floating "➕ Mark Point Here" button on Bottom-Center of Map Overlay
+        if (onMarkCurrentGpsPoint != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(10.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(FarmGreenHeader)
+                    .clickable {
+                        onMarkCurrentGpsPoint()
+                        Toast.makeText(context, "Point marked!", Toast.LENGTH_SHORT).show()
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .testTag("floating_mark_point_map")
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Point",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Mark Point",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // Map controls: Map type switcher & Quick Undo/Delete
         Row(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -1035,6 +1883,60 @@ fun FarmMapView(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
+                }
+            }
+
+            if (points.isNotEmpty() && onUndoPoint != null) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.75f))
+                        .clickable { onUndoPoint() }
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .testTag("map_overlay_undo")
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Undo,
+                            contentDescription = "Undo Point",
+                            tint = Color(0xFF64B5F6),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "Undo",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            if (points.isNotEmpty() && onClearPoints != null) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.75f))
+                        .clickable { onClearPoints() }
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .testTag("map_overlay_clear")
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = "Clear All Points",
+                            tint = Color(0xFFE57373),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "Clear",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
