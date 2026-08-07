@@ -1,0 +1,8 @@
+{
+  "name": "Remix NutriGuide",
+  "description": "Measure farm area, calculate fertilizer needs, run soil analysis, and access farming guides offline.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
