@@ -84,6 +84,9 @@ fun RiceFarmAssistantApp(
 
     // Fertilizer states
     val fertilizerFarmArea by viewModel.fertilizerFarmArea.collectAsStateWithLifecycle()
+    val targetN by viewModel.targetN.collectAsStateWithLifecycle()
+    val targetP by viewModel.targetP.collectAsStateWithLifecycle()
+    val targetK by viewModel.targetK.collectAsStateWithLifecycle()
     val fertilizerList by viewModel.availableFertilizers.collectAsStateWithLifecycle()
     val calculationResult by viewModel.calculationResult.collectAsStateWithLifecycle()
 
@@ -222,6 +225,9 @@ fun RiceFarmAssistantApp(
                     )
                     2 -> FertilizerScreen(
                         farmArea = fertilizerFarmArea,
+                        targetN = targetN,
+                        targetP = targetP,
+                        targetK = targetK,
                         fertilizerList = fertilizerList,
                         calculationResult = calculationResult,
                         selectedCrop = cropType,
@@ -235,6 +241,9 @@ fun RiceFarmAssistantApp(
                         onScenarioSelected = { scenario -> viewModel.setWeatherScenario(scenario) },
                         onRefreshWeather = { viewModel.refreshWeatherData() },
                         onAreaChange = { viewModel.setFertilizerFarmArea(it) },
+                        onTargetNChange = { viewModel.setTargetN(it) },
+                        onTargetPChange = { viewModel.setTargetP(it) },
+                        onTargetKChange = { viewModel.setTargetK(it) },
                         onToggleSelected = { id -> viewModel.toggleFertilizerSelected(id) },
                         onToggleAvailability = { id -> viewModel.toggleFertilizerAvailability(id) },
                         onUpdatePrice = { id, price -> viewModel.updateFertilizerPrice(id, price) },

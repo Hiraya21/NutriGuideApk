@@ -4,9 +4,11 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,8 +29,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -76,6 +81,13 @@ import com.example.ui.theme.FarmTextSecondary
 import com.example.ui.viewmodel.CalculationResult
 import com.example.util.PdfExportHelper
 
+data class NpkTargetPreset(
+    val name: String,
+    val n: String,
+    val p: String,
+    val k: String
+)
+
 @Composable
 fun FertilizerScreen(
     farmArea: String,
@@ -109,6 +121,10 @@ fun FertilizerScreen(
     val context = LocalContext.current
     val areaNum = farmArea.toDoubleOrNull() ?: 1.0
     val selectedList = fertilizerList.filter { it.isSelected }
+
+    // Reset Confirmation Dialog state
+    var showResetConfirmDialog by remember { mutableStateOf(false) }
+    var pendingPresetToApply by remember { mutableStateOf<NpkTargetPreset?>(null) }
 
     Column(
         modifier = modifier
@@ -188,93 +204,218 @@ fun FertilizerScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Target NPK Recommendation Section
+        // Target NPK Recommendation Section (Editable Manual Target or Preset Selector)
+        val npkPresets = listOf(
+            NpkTargetPreset("Rice High Yield", "120", "40", "30"),
+            NpkTargetPreset("Rice Med Yield", "90", "30", "30"),
+            NpkTargetPreset("Corn / Maize", "120", "90", "60"),
+            NpkTargetPreset("Vegetables", "150", "60", "120"),
+            NpkTargetPreset("Root Crops", "80", "40", "120"),
+            NpkTargetPreset("Sugarcane", "160", "80", "140")
+        )
+
+        val activePreset = npkPresets.find {
+            it.n == targetN && it.p == targetP && it.k == targetK
+        }
+        val isManualTarget = activePreset == null
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(14.dp))
-                .border(1.dp, FarmBorder, RoundedCornerShape(14.dp)),
-            colors = CardDefaults.cardColors(containerColor = FarmGreenLight)
+                .border(1.dp, if (isManualTarget) Color(0xFF2E7D32) else FarmBorder, RoundedCornerShape(14.dp)),
+            colors = CardDefaults.cardColors(containerColor = if (isManualTarget) Color(0xFFF1F8E9) else FarmGreenLight)
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Science,
-                        contentDescription = null,
-                        tint = FarmGreenHeader,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Target Nutrient Recommendation (kg/ha)",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = FarmGreenHeader
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Science,
+                            contentDescription = null,
+                            tint = FarmGreenHeader,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Target Nutrient Recommendation",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmGreenHeader
+                        )
+                    }
+
+                    // Display Tag for Active Target Mode (Manual vs Preset)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isManualTarget) Color(0xFF2E7D32) else Color(0xFF1565C0))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isManualTarget) Icons.Default.Edit else Icons.Default.Tune,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isManualTarget) "Manual Target" else "Preset: ${activePreset.name}",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // Presets Selection Bar
+                Text(
+                    text = "Select Preset or Edit Custom Manual Target:",
+                    fontSize = 11.sp,
+                    color = FarmTextSecondary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                ) {
+                    // Custom Manual Chip
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isManualTarget) Color(0xFF2E7D32) else FarmGreenPrimary.copy(alpha = 0.15f))
+                            .border(1.dp, if (isManualTarget) Color(0xFF2E7D32) else Color.Transparent, RoundedCornerShape(8.dp))
+                            .clickable {
+                                // Keep existing manual values or focus text field
+                            }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "✏️ Custom Manual Target",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isManualTarget) Color.White else FarmGreenHeader
+                        )
+                    }
+
+                    npkPresets.forEach { preset ->
+                        val isSelected = activePreset?.name == preset.name
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) Color(0xFF1565C0) else FarmGreenPrimary.copy(alpha = 0.15f))
+                                .border(1.dp, if (isSelected) Color(0xFF1565C0) else Color.Transparent, RoundedCornerShape(8.dp))
+                                .clickable {
+                                    if (isManualTarget && !isSelected) {
+                                        pendingPresetToApply = preset
+                                        showResetConfirmDialog = true
+                                    } else {
+                                        onTargetNChange(preset.n)
+                                        onTargetPChange(preset.p)
+                                        onTargetKChange(preset.k)
+                                    }
+                                }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "${preset.name} (${preset.n}-${preset.p}-${preset.k})",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) Color.White else FarmGreenHeader
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Editable Input Fields for Target N, P2O5, K2O
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // N Target
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Nitrogen (N)", fontSize = 11.sp, color = FarmTextSecondary)
+                        Text("Nitrogen (N) kg/ha", fontSize = 11.sp, color = FarmTextSecondary, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(2.dp))
                         OutlinedTextField(
                             value = targetN,
                             onValueChange = onTargetNChange,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black),
-                            modifier = Modifier.fillMaxWidth().testTag("input_target_n"),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("input_target_n"),
                             shape = RoundedCornerShape(8.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.Black,
                                 unfocusedTextColor = Color.Black,
-                                focusedBorderColor = FarmGreenPrimary,
-                                unfocusedBorderColor = FarmBorder
+                                focusedBorderColor = if (isManualTarget) Color(0xFF2E7D32) else FarmGreenPrimary,
+                                unfocusedBorderColor = FarmBorder,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
                             )
                         )
                     }
 
                     // P2O5 Target
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("P₂O₅ (P)", fontSize = 11.sp, color = FarmTextSecondary)
+                        Text("P₂O₅ (P) kg/ha", fontSize = 11.sp, color = FarmTextSecondary, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(2.dp))
                         OutlinedTextField(
                             value = targetP,
                             onValueChange = onTargetPChange,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black),
-                            modifier = Modifier.fillMaxWidth().testTag("input_target_p"),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("input_target_p"),
                             shape = RoundedCornerShape(8.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.Black,
                                 unfocusedTextColor = Color.Black,
-                                focusedBorderColor = FarmGreenPrimary,
-                                unfocusedBorderColor = FarmBorder
+                                focusedBorderColor = if (isManualTarget) Color(0xFF2E7D32) else FarmGreenPrimary,
+                                unfocusedBorderColor = FarmBorder,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
                             )
                         )
                     }
 
                     // K2O Target
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("K₂O (K)", fontSize = 11.sp, color = FarmTextSecondary)
+                        Text("K₂O (K) kg/ha", fontSize = 11.sp, color = FarmTextSecondary, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.height(2.dp))
                         OutlinedTextField(
                             value = targetK,
                             onValueChange = onTargetKChange,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black),
-                            modifier = Modifier.fillMaxWidth().testTag("input_target_k"),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("input_target_k"),
                             shape = RoundedCornerShape(8.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.Black,
                                 unfocusedTextColor = Color.Black,
-                                focusedBorderColor = FarmGreenPrimary,
-                                unfocusedBorderColor = FarmBorder
+                                focusedBorderColor = if (isManualTarget) Color(0xFF2E7D32) else FarmGreenPrimary,
+                                unfocusedBorderColor = FarmBorder,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
                             )
                         )
                     }
@@ -282,40 +423,145 @@ fun FertilizerScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // Summary Total Target Banner
+                val nNum = targetN.toDoubleOrNull() ?: 0.0
+                val pNum = targetP.toDoubleOrNull() ?: 0.0
+                val kNum = targetK.toDoubleOrNull() ?: 0.0
+                val totalNpkPerHa = nNum + pNum + kNum
+                val totalFieldNpk = totalNpkPerHa * areaNum
+
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.8f))
+                        .border(1.dp, FarmBorder, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Presets:", fontSize = 11.sp, color = FarmTextSecondary, fontWeight = FontWeight.SemiBold)
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(FarmGreenPrimary.copy(alpha = 0.15f))
-                            .clickable {
+                    Column {
+                        Text(
+                            text = "Target NPK Ratio: $targetN - $targetP - $targetK NPK kg/ha",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmTextDark
+                        )
+                        Text(
+                            text = "Total Field Target: ${String.format("%.1f", totalFieldNpk)} kg across ${String.format("%.2f", areaNum)} ha",
+                            fontSize = 10.sp,
+                            color = FarmTextSecondary
+                        )
+                    }
+
+                    if (isManualTarget) {
+                        TextButton(
+                            onClick = {
+                                pendingPresetToApply = null
+                                showResetConfirmDialog = true
+                            },
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.testTag("btn_reset_manual_npk")
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.RestartAlt,
+                                    contentDescription = null,
+                                    tint = Color(0xFFD32F2F),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text("Reset NPK", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Reset Confirmation Dialog
+        if (showResetConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showResetConfirmDialog = false
+                    pendingPresetToApply = null
+                },
+                modifier = Modifier.testTag("dialog_reset_npk_confirm"),
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Warning",
+                        tint = Color(0xFFD32F2F),
+                        modifier = Modifier.size(28.dp)
+                    )
+                },
+                title = {
+                    Text(
+                        text = "Reset Manual NPK Entries?",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = FarmTextDark
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Are you sure you want to reset your custom manual NPK target entries ($targetN - $targetP - $targetK kg/ha)?",
+                            fontSize = 13.sp,
+                            color = FarmTextDark
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        val desc = if (pendingPresetToApply != null) {
+                            "This will overwrite your manual entries with the '${pendingPresetToApply?.name}' preset (${pendingPresetToApply?.n}-${pendingPresetToApply?.p}-${pendingPresetToApply?.k} kg/ha)."
+                        } else {
+                            "This will restore the default recommended target NPK ratio (120-40-30 kg/ha)."
+                        }
+                        Text(
+                            text = desc,
+                            fontSize = 12.sp,
+                            color = FarmTextSecondary
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val preset = pendingPresetToApply
+                            if (preset != null) {
+                                onTargetNChange(preset.n)
+                                onTargetPChange(preset.p)
+                                onTargetKChange(preset.k)
+                            } else {
                                 onTargetNChange("120")
                                 onTargetPChange("40")
                                 onTargetKChange("30")
                             }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            showResetConfirmDialog = false
+                            pendingPresetToApply = null
+                            Toast.makeText(context, "Manual NPK entries reset successfully", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.testTag("btn_confirm_reset_npk")
                     ) {
-                        Text("120-40-30", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = FarmGreenHeader)
+                        Text("Reset NPK", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(FarmGreenPrimary.copy(alpha = 0.15f))
-                            .clickable {
-                                onTargetNChange("120")
-                                onTargetPChange("90")
-                                onTargetKChange("60")
-                            }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                },
+                dismissButton = {
+                    OutlinedButton(
+                        onClick = {
+                            showResetConfirmDialog = false
+                            pendingPresetToApply = null
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.testTag("btn_cancel_reset_npk")
                     ) {
-                        Text("120-90-60", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = FarmGreenHeader)
+                        Text("Cancel", fontSize = 12.sp, color = FarmTextDark)
                     }
-                }
-            }
+                },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(16.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))

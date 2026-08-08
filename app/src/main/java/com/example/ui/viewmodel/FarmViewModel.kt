@@ -280,10 +280,23 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         val currentList = _boundaryPoints.value.toMutableList()
         val currLoc = _currentLocation.value
 
-        val newLat = lat ?: (currLoc?.lat ?: ((currentList.lastOrNull()?.lat ?: 15.4827) + (java.util.Random().nextDouble() - 0.5) * 0.0006))
-        val newLng = lng ?: (currLoc?.lng ?: ((currentList.lastOrNull()?.lng ?: 120.9723) + (java.util.Random().nextDouble() - 0.5) * 0.0006))
+        val newPoint = if (lat != null && lng != null) {
+            MapPoint(lat, lng)
+        } else if (currentList.isEmpty()) {
+            currLoc ?: MapPoint(15.4827, 120.9723)
+        } else {
+            val last = currentList.last()
+            if (currLoc != null && MapUtils.calculateDistanceMeters(last, currLoc) > 1.0) {
+                currLoc
+            } else {
+                // If device hasn't physically moved across the field, project the next corner ~12 meters out
+                val pointIndex = currentList.size
+                val angleDegrees = (pointIndex * 90.0) % 360.0
+                val distanceMeters = 12.5 + (pointIndex % 3) * 2.0
+                MapUtils.destinationPoint(last, distanceMeters, angleDegrees)
+            }
+        }
 
-        val newPoint = MapPoint(newLat, newLng)
         currentList.add(newPoint)
         _boundaryPoints.value = currentList
 

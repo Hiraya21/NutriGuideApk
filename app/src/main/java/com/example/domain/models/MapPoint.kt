@@ -72,4 +72,24 @@ object MapUtils {
     fun squareMetersToHectares(sqMeters: Double): Double {
         return sqMeters / 10000.0
     }
+
+    /**
+     * Calculates destination MapPoint given a start point, distance in meters, and bearing in degrees
+     */
+    fun destinationPoint(start: MapPoint, distanceMeters: Double, bearingDegrees: Double): MapPoint {
+        val distRatio = distanceMeters / EARTH_RADIUS
+        val bearingRad = Math.toRadians(bearingDegrees)
+        val lat1 = Math.toRadians(start.lat)
+        val lon1 = Math.toRadians(start.lng)
+
+        val lat2 = kotlin.math.asin(
+            sin(lat1) * cos(distRatio) +
+            cos(lat1) * sin(distRatio) * cos(bearingRad)
+        )
+        val lon2 = lon1 + atan2(
+            sin(bearingRad) * sin(distRatio) * cos(lat1),
+            cos(distRatio) - sin(lat1) * sin(lat2)
+        )
+        return MapPoint(Math.toDegrees(lat2), Math.toDegrees(lon2))
+    }
 }

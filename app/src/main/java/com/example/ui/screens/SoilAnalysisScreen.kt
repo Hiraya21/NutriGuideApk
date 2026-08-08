@@ -48,10 +48,13 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -61,6 +64,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
@@ -167,6 +171,8 @@ fun SoilAnalysisScreen(
     var customNPpm by remember { mutableStateOf("22") }
     var customPPpm by remember { mutableStateOf("18") }
     var customKPpm by remember { mutableStateOf("140") }
+
+    var showResetLabConfirmDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -686,31 +692,113 @@ fun SoilAnalysisScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            onGenerateCustom(
-                                crop,
-                                soilType,
-                                nitrogen,
-                                phosphorus,
-                                potassium,
-                                organicMatter,
-                                inputPh.toDouble(),
-                                inputMoisture.toDouble()
-                            )
-                            selectedTab = 2 // Switch to Dashboard
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .testTag("btn_generate_soil_rec"),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = FarmBrownHeader)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.Analytics, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("GENERATE VISUAL DASHBOARD", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        OutlinedButton(
+                            onClick = {
+                                showResetLabConfirmDialog = true
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .testTag("btn_reset_lab_entries"),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.RestartAlt, contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Reset Lab Data", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFFD32F2F))
+                        }
+
+                        Button(
+                            onClick = {
+                                onGenerateCustom(
+                                    crop,
+                                    soilType,
+                                    nitrogen,
+                                    phosphorus,
+                                    potassium,
+                                    organicMatter,
+                                    inputPh.toDouble(),
+                                    inputMoisture.toDouble()
+                                )
+                                selectedTab = 2 // Switch to Dashboard
+                            },
+                            modifier = Modifier
+                                .weight(2f)
+                                .height(48.dp)
+                                .testTag("btn_generate_soil_rec"),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = FarmBrownHeader)
+                        ) {
+                            Icon(Icons.Default.Analytics, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("GENERATE DASHBOARD", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
+                }
+
+                if (showResetLabConfirmDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showResetLabConfirmDialog = false },
+                        modifier = Modifier.testTag("dialog_reset_lab_confirm"),
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Warning",
+                                tint = Color(0xFFD32F2F),
+                                modifier = Modifier.size(28.dp)
+                            )
+                        },
+                        title = {
+                            Text(
+                                text = "Reset Manual Lab Entries?",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp,
+                                color = FarmTextDark
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = "Are you sure you want to reset all custom manual soil laboratory entries? This action will restore crop, soil texture, N-P-K nutrient status, and pH to default levels.",
+                                fontSize = 13.sp,
+                                color = FarmTextDark
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    onCropChange("Rice")
+                                    onSoilTypeChange("Loam")
+                                    onNitrogenChange("Low")
+                                    onPhosphorusChange("Medium")
+                                    onPotassiumChange("Medium")
+                                    onOrganicMatterChange("2-4%")
+                                    inputPh = 6.2f
+                                    inputMoisture = 48.0f
+                                    showResetLabConfirmDialog = false
+                                    Toast.makeText(context, "Manual lab entries reset to defaults", Toast.LENGTH_SHORT).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.testTag("btn_confirm_reset_lab")
+                            ) {
+                                Text("Reset Data", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        },
+                        dismissButton = {
+                            OutlinedButton(
+                                onClick = { showResetLabConfirmDialog = false },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.testTag("btn_cancel_reset_lab")
+                            ) {
+                                Text("Cancel", fontSize = 12.sp, color = FarmTextDark)
+                            }
+                        },
+                        containerColor = Color.White,
+                        shape = RoundedCornerShape(16.dp)
+                    )
                 }
             }
 
