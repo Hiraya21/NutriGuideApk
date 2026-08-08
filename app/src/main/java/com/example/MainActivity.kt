@@ -37,11 +37,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
-            org.osmdroid.config.Configuration.getInstance().load(
+            val osmConfig = org.osmdroid.config.Configuration.getInstance()
+            val osmCacheDir = java.io.File(applicationContext.cacheDir, "osmdroid")
+            if (!osmCacheDir.exists()) {
+                osmCacheDir.mkdirs()
+            }
+            osmConfig.osmdroidBasePath = osmCacheDir
+            osmConfig.osmdroidTileCache = java.io.File(osmCacheDir, "tiles")
+            osmConfig.tileFileSystemCacheMaxBytes = 500L * 1024 * 1024 // 500 MB max disk cache for map tiles
+            osmConfig.tileFileSystemCacheTrimBytes = 450L * 1024 * 1024 // Trim threshold
+            osmConfig.load(
                 applicationContext,
                 getSharedPreferences("osmdroid", MODE_PRIVATE)
             )
-            org.osmdroid.config.Configuration.getInstance().userAgentValue = packageName
+            osmConfig.userAgentValue = packageName
         } catch (e: Exception) {
             e.printStackTrace()
         }

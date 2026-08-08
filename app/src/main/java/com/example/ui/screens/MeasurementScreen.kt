@@ -115,9 +115,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.compose.material.icons.filled.CloudDownload
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.tileprovider.cachemanager.CacheManager
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
@@ -2618,7 +2621,53 @@ fun FarmMapView(
     var mapViewRef by remember { mutableStateOf<MapView?>(null) }
     var isFollowingGps by rememberSaveable { mutableStateOf(true) }
     var tileSourceMode by rememberSaveable { mutableStateOf(0) } // 0: Standard, 1: Topo, 2: Satellite/USGS
+    var isCachingRegion by remember { mutableStateOf(false) }
+    var cachedTileCount by remember { mutableStateOf(0) }
     val context = LocalContext.current
+
+    val triggerRegionCache: () -> Unit = {
+        mapViewRef?.let { map ->
+            val allLats = mutableListOf<Double>()
+            val allLngs = mutableListOf<Double>()
+            currentLocation?.let { allLats.add(it.lat); allLngs.add(it.lng) }
+            points.forEach { allLats.add(it.lat); allLngs.add(it.lng) }
+            if (allLats.isEmpty()) {
+                allLats.add(15.4827)
+                allLngs.add(120.9723)
+            }
+            val buffer = 0.008 // ~800m - 1km buffer around farm region
+            val minLat = (allLats.minOrNull() ?: 15.4827) - buffer
+            val maxLat = (allLats.maxOrNull() ?: 15.4827) + buffer
+            val minLng = (allLngs.minOrNull() ?: 120.9723) - buffer
+            val maxLng = (allLngs.maxOrNull() ?: 120.9723) + buffer
+
+            val boundingBox = BoundingBox(maxLat, maxLng, minLat, minLng)
+            val cacheManager = CacheManager(map)
+            val minZoom = 15
+            val maxZoom = 19
+            val possibleTiles = cacheManager.possibleTilesInArea(boundingBox, minZoom, maxZoom)
+
+            isCachingRegion = true
+            Toast.makeText(context, "Caching $possibleTiles region tiles for offline farm use...", Toast.LENGTH_SHORT).show()
+
+            cacheManager.downloadAreaAsync(context, boundingBox, minZoom, maxZoom, object : CacheManager.CacheManagerCallback {
+                override fun onTaskComplete() {
+                    isCachingRegion = false
+                    cachedTileCount = possibleTiles
+                    Toast.makeText(context, "✅ $possibleTiles farm map tiles cached for offline signal loss!", Toast.LENGTH_LONG).show()
+                }
+                override fun onTaskFailed(errors: Int) {
+                    isCachingRegion = false
+                    Toast.makeText(context, "Region map tiles cached ($errors errors)", Toast.LENGTH_SHORT).show()
+                }
+                override fun updateProgress(progress: Int, currentZoomLevel: Int, zoomMin: Int, zoomMax: Int) {}
+                override fun downloadStarted() {}
+                override fun setPossibleTilesInArea(total: Int) {
+                    cachedTileCount = total
+                }
+            })
+        }
+    }
 
     // Auto-center and fetch map tiles based on real-time user location updates
     LaunchedEffect(currentLocation, isFollowingGps) {
@@ -2638,16 +2687,26 @@ fun FarmMapView(
         AndroidView(
             factory = { ctx ->
                 try {
-                    Configuration.getInstance().load(
+                    val osmConfig = Configuration.getInstance()
+                    val osmCacheDir = java.io.File(ctx.cacheDir, "osmdroid")
+                    if (!osmCacheDir.exists()) {
+                        osmCacheDir.mkdirs()
+                    }
+                    osmConfig.osmdroidBasePath = osmCacheDir
+                    osmConfig.osmdroidTileCache = java.io.File(osmCacheDir, "tiles")
+                    osmConfig.tileFileSystemCacheMaxBytes = 500L * 1024 * 1024
+                    osmConfig.tileFileSystemCacheTrimBytes = 450L * 1024 * 1024
+                    osmConfig.load(
                         ctx,
                         ctx.getSharedPreferences("osmdroid", android.content.Context.MODE_PRIVATE)
                     )
-                    Configuration.getInstance().userAgentValue = ctx.packageName
+                    osmConfig.userAgentValue = ctx.packageName
                 } catch (e: Throwable) {
                     e.printStackTrace()
                 }
 
                 MapView(ctx).apply {
+                    setUseDataConnection(true)
                     setTileSource(
                         when (tileSourceMode) {
                             1 -> TileSourceFactory.OpenTopo
@@ -2680,6 +2739,7 @@ fun FarmMapView(
             },
             update = { mapView ->
                 mapViewRef = mapView
+                mapView.setUseDataConnection(true)
                 mapView.setTileSource(
                     when (tileSourceMode) {
                         1 -> TileSourceFactory.OpenTopo
@@ -2795,7 +2855,7 @@ fun FarmMapView(
             }
         }
 
-        // Map controls: Map type switcher & Quick Undo/Delete
+        // Map controls: Map type switcher, Cache Region button & Quick Undo/Delete
         Row(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -2819,10 +2879,35 @@ fun FarmMapView(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = when (tileSourceMode) {
-                            1 -> "Map: Topographic"
-                            2 -> "Map: Satellite"
-                            else -> "Map: Standard"
+                            1 -> "Map: Topo"
+                            2 -> "Map: Sat"
+                            else -> "Map: Std"
                         },
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (isCachingRegion) Color(0xFFE65100).copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.75f))
+                    .clickable { triggerRegionCache() }
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .testTag("map_overlay_cache_region")
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.CloudDownload,
+                        contentDescription = "Cache Offline Region",
+                        tint = if (cachedTileCount > 0) Color(0xFF00E676) else Color(0xFFFFB74D),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = if (isCachingRegion) "Caching..." else if (cachedTileCount > 0) "Cached ($cachedTileCount)" else "Cache Region",
                         color = Color.White,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
