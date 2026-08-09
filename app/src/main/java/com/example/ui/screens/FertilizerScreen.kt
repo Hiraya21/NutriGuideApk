@@ -159,18 +159,6 @@ fun FertilizerScreen(
             textAlign = TextAlign.Center
         )
 
-        // Regional Weather & Fertilizer Advisory Card
-        WeatherAdvisoryCard(
-            weatherData = weatherData,
-            regions = agriculturalRegions,
-            selectedRegion = selectedRegion,
-            selectedScenario = selectedWeatherScenario,
-            onRegionSelected = onRegionSelected,
-            onScenarioSelected = onScenarioSelected,
-            onRefresh = onRefreshWeather,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
         // Farm Area Input Label
         Text(
             text = "Farm Area (hectares)",

@@ -163,7 +163,8 @@ fun HomeScreen(
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     val appSubtitle = when (currentLanguage) {
                         AppLanguage.ENGLISH -> "Rice Farm Assistant"
@@ -172,60 +173,72 @@ fun HomeScreen(
                         AppLanguage.ILOCANO -> "Katulong ti Talon ti Bagas"
                         AppLanguage.CEBUANO -> "Matawag sa Humayan"
                     }
-                    Text(
-                        text = appSubtitle,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White.copy(alpha = 0.9f),
-                        modifier = Modifier.weight(1f)
-                    )
 
-                    // Offline Badge Chip
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White.copy(alpha = 0.2f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = Color(0xFFA5D6A7),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Offline Ready",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White
-                            )
+                        Text(
+                            text = appSubtitle,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White.copy(alpha = 0.9f),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Offline Badge Chip
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFFA5D6A7),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "Offline Ready",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
 
-                    // Global Language Dropdown Toggle
-                    LanguageDropdown(
-                        currentLanguage = currentLanguage,
-                        onLanguageSelected = onLanguageSelected
-                    )
-
-                    Spacer(modifier = Modifier.width(4.dp))
-
-                    // Account & Delete Account Button
-                    IconButton(
-                        onClick = onOpenDeleteAccount,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .testTag("btn_open_delete_account_header")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PersonRemove,
-                            contentDescription = "Delete Account",
-                            tint = Color.White
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Global Language Dropdown Toggle
+                        LanguageDropdown(
+                            currentLanguage = currentLanguage,
+                            onLanguageSelected = onLanguageSelected
                         )
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        // Account & Delete Account Button
+                        IconButton(
+                            onClick = onOpenDeleteAccount,
+                            modifier = Modifier
+                                .size(34.dp)
+                                .testTag("btn_open_delete_account_header")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PersonRemove,
+                                contentDescription = "Delete Account",
+                                tint = Color.White
+                            )
+                        }
                     }
                 }
 

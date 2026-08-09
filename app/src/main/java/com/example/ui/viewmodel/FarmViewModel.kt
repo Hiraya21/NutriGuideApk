@@ -857,18 +857,27 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
                 onComplete(true)
             }.onFailure { err ->
                 _isGeminiAnalyzing.value = false
-                _geminiAnalysisError.value = err.message ?: "Gemini analysis failed"
-                // Fallback to local heuristic assessment on error so user is never blocked
-                generateSoilRecommendationWithCustomValues(
-                    crop = crop,
-                    type = _soilType.value,
-                    n = _nitrogenLevel.value,
-                    p = _phosphorusLevel.value,
-                    k = _potassiumLevel.value,
-                    om = _organicMatter.value,
-                    ph = 6.2,
-                    moisture = 48.0
-                )
+                val errorMsg = err.message ?: "Gemini analysis failed"
+                _geminiAnalysisError.value = errorMsg
+
+                val isInvalidImage = errorMsg.contains("INVALID IMAGE DETECTED", ignoreCase = true)
+                if (isInvalidImage) {
+                    // Clear active report and do NOT generate fallback recommendations when image is invalid
+                    _activeSoilReport.value = null
+                    _soilRecommendation.value = null
+                } else {
+                    // Fallback to local heuristic assessment for network/key errors so user is not blocked
+                    generateSoilRecommendationWithCustomValues(
+                        crop = crop,
+                        type = _soilType.value,
+                        n = _nitrogenLevel.value,
+                        p = _phosphorusLevel.value,
+                        k = _potassiumLevel.value,
+                        om = _organicMatter.value,
+                        ph = 6.2,
+                        moisture = 48.0
+                    )
+                }
                 onComplete(false)
             }
         }

@@ -72,6 +72,9 @@ import com.example.ui.theme.FarmTextSecondary
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material3.OutlinedButton
 
+import com.example.domain.models.AppLanguage
+import com.example.ui.components.LanguageBar
+
 @Composable
 fun HistoryScreen(
     searchQuery: String,
@@ -82,6 +85,8 @@ fun HistoryScreen(
     onDeleteFarm: (FarmRecord) -> Unit,
     onDeleteAllFarms: () -> Unit,
     onOpenDeleteAccount: (() -> Unit)? = null,
+    currentLanguage: AppLanguage = AppLanguage.ENGLISH,
+    onLanguageSelected: (AppLanguage) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var farmToDelete by remember { mutableStateOf<FarmRecord?>(null) }
@@ -94,6 +99,13 @@ fun HistoryScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        // Language Selector Bar
+        LanguageBar(
+            currentLanguage = currentLanguage,
+            onLanguageSelected = onLanguageSelected,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
         // Header
         Row(
             modifier = Modifier
@@ -102,14 +114,28 @@ fun HistoryScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val titleText = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "Farm History"
+                AppLanguage.TAGALOG -> "Nakaraang Tala ng Bukid"
+                AppLanguage.TAGLISH -> "Farm History & Records"
+                AppLanguage.ILOCANO -> "Nakalabas a Rekord ti Talon"
+                AppLanguage.CEBUANO -> "Agi-an sa Humayan"
+            }
             Text(
-                text = "Farm History",
+                text = titleText,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = FarmTextDark
             )
 
             if (farms.isNotEmpty()) {
+                val clearAllText = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "Clear All"
+                    AppLanguage.TAGALOG -> "Burahin Lahat"
+                    AppLanguage.TAGLISH -> "Clear All"
+                    AppLanguage.ILOCANO -> "Punasan Amin"
+                    AppLanguage.CEBUANO -> "Pufason Tanan"
+                }
                 TextButton(
                     onClick = { showDeleteAllDialog = true },
                     colors = ButtonDefaults.textButtonColors(contentColor = FarmRed)
@@ -122,7 +148,7 @@ fun HistoryScreen(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Clear All",
+                        text = clearAllText,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = FarmRed
@@ -132,10 +158,17 @@ fun HistoryScreen(
         }
 
         // Search Bar
+        val searchPlaceholder = when (currentLanguage) {
+            AppLanguage.ENGLISH -> "Search saved farms..."
+            AppLanguage.TAGALOG -> "Maghanap ng na-save na bukid..."
+            AppLanguage.TAGLISH -> "Search ng saved farms..."
+            AppLanguage.ILOCANO -> "Biroken ti naidulin a talon..."
+            AppLanguage.CEBUANO -> "Pangitaa ang na-save nga humayan..."
+        }
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchChange,
-            placeholder = { Text("Search saved farms...", color = Color.Gray) },
+            placeholder = { Text(searchPlaceholder, color = Color.Gray) },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
@@ -178,8 +211,15 @@ fun HistoryScreen(
                         .padding(14.dp),
                     verticalArrangement = Arrangement.Center
                 ) {
+                    val totalFarmsLabel = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "Total Farms"
+                        AppLanguage.TAGALOG -> "Kabuuan ng Bukid"
+                        AppLanguage.TAGLISH -> "Total ng Bukid"
+                        AppLanguage.ILOCANO -> "Pagsasao ti Talon"
+                        AppLanguage.CEBUANO -> "Tanan nga Humayan"
+                    }
                     Text(
-                        text = "Total Farms",
+                        text = totalFarmsLabel,
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.85f)
                     )
@@ -208,8 +248,15 @@ fun HistoryScreen(
                         .padding(14.dp),
                     verticalArrangement = Arrangement.Center
                 ) {
+                    val totalAreaLabel = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "Total Area"
+                        AppLanguage.TAGALOG -> "Kabuuan ng Sukat"
+                        AppLanguage.TAGLISH -> "Total Area"
+                        AppLanguage.ILOCANO -> "Kabuuan nga Sukat"
+                        AppLanguage.CEBUANO -> "Tanan nga Sukat"
+                    }
                     Text(
-                        text = "Total Area",
+                        text = totalAreaLabel,
                         fontSize = 13.sp,
                         color = FarmTextSecondary
                     )
@@ -252,8 +299,15 @@ fun HistoryScreen(
                         modifier = Modifier.size(48.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    val emptyText = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "No saved farms found"
+                        AppLanguage.TAGALOG -> "Walang nahanap na na-save na bukid"
+                        AppLanguage.TAGLISH -> "No saved farms found"
+                        AppLanguage.ILOCANO -> "Awan ti naidulin a talon"
+                        AppLanguage.CEBUANO -> "Walay na-save nga humayan"
+                    }
                     Text(
-                        text = "No saved farms found",
+                        text = emptyText,
                         color = FarmTextSecondary,
                         fontSize = 14.sp
                     )
@@ -271,6 +325,13 @@ fun HistoryScreen(
 
         if (onOpenDeleteAccount != null) {
             Spacer(modifier = Modifier.height(16.dp))
+            val deleteAccountLabel = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "Delete Account"
+                AppLanguage.TAGALOG -> "Burahin ang Account"
+                AppLanguage.TAGLISH -> "Delete Account"
+                AppLanguage.ILOCANO -> "Pukawen ti Account"
+                AppLanguage.CEBUANO -> "Pufason ang Account"
+            }
             OutlinedButton(
                 onClick = onOpenDeleteAccount,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = FarmRed),
@@ -284,13 +345,13 @@ fun HistoryScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.PersonRemove,
-                        contentDescription = "Delete Account",
+                        contentDescription = deleteAccountLabel,
                         tint = FarmRed,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Delete Account",
+                        text = deleteAccountLabel,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = FarmRed

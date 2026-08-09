@@ -68,7 +68,7 @@ fun BottomNavBar(
         NavigationBar(
             containerColor = Color.White,
             tonalElevation = 0.dp,
-            modifier = Modifier.height(64.dp)
+            modifier = Modifier.height(72.dp)
         ) {
             navTabItems.forEachIndexed { index, item ->
                 val isSelected = selectedTab == index
@@ -125,6 +125,8 @@ fun BottomNavBar(
                         Text(
                             text = tabTitle,
                             fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             color = if (isSelected) FarmGreenHeader else FarmTextSecondary
                         )
                     },

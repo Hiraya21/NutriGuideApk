@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 
 data class GeminiSoilAnalysisResult(
+    val isSoilSample: Boolean = true,
     val soilType: String,
     val healthScore: Int,
     val healthStatus: String,
@@ -47,6 +48,39 @@ class GeminiSoilRepository {
         .addLast(KotlinJsonAdapterFactory())
         .build()
 
+    fun isSoilLikeBitmap(bitmap: Bitmap): Boolean {
+        var nonSoilPixelCount = 0
+        val totalSamples = 36
+        val width = bitmap.width
+        val height = bitmap.height
+
+        if (width <= 0 || height <= 0) return false
+
+        for (i in 1..6) {
+            for (j in 1..6) {
+                val x = (width * i / 7).coerceIn(0, width - 1)
+                val y = (height * j / 7).coerceIn(0, height - 1)
+                val pixel = bitmap.getPixel(x, y)
+                val red = android.graphics.Color.red(pixel)
+                val green = android.graphics.Color.green(pixel)
+                val blue = android.graphics.Color.blue(pixel)
+
+                // Non-soil colors check: Predominant blue sky/object, neon green, pure white paper/wall, bright magenta
+                val isBlueSky = blue > red + 25 && blue > green + 20
+                val isNeonGreen = green > red + 45 && green > blue + 45
+                val isPureWhite = red > 248 && green > 248 && blue > 248
+                val isBrightMagenta = red > 210 && blue > 170 && green < 130
+
+                if (isBlueSky || isNeonGreen || isPureWhite || isBrightMagenta) {
+                    nonSoilPixelCount++
+                }
+            }
+        }
+
+        // If >= 60% of pixels fail soil chromatic bounds, classify as non-soil
+        return nonSoilPixelCount < (totalSamples * 0.60)
+    }
+
     private fun Bitmap.toBase64Jpeg(): String {
         val outputStream = ByteArrayOutputStream()
         // Compress image to reasonable size for API transfer
@@ -62,6 +96,13 @@ class GeminiSoilRepository {
 
     suspend fun analyzeSoilImage(bitmap: Bitmap, crop: String): Result<GeminiSoilAnalysisResult> = withContext(Dispatchers.IO) {
         try {
+            // Local pre-validation check
+            if (!isSoilLikeBitmap(bitmap)) {
+                return@withContext Result.failure(
+                    Exception("INVALID IMAGE DETECTED: The captured image does not appear to be a soil or earth sample. Please align camera on actual field soil and restart scanning.")
+                )
+            }
+
             val apiKey = BuildConfig.GEMINI_API_KEY
             if (apiKey.isBlank() || apiKey == "YOUR_GEMINI_API_KEY") {
                 return@withContext Result.failure(
@@ -73,16 +114,16 @@ class GeminiSoilRepository {
 
             val promptText = """
                 You are a senior soil scientist and precision agriculture AI assistant.
-                Analyze this soil image captured from the field for target crop: $crop.
-                
-                Examine visual characteristics in the image:
-                1. Soil color (chroma, value, hue) and organic dark matter tint.
-                2. Texture, grain size, aggregate structure (e.g. Clay, Clay Loam, Sandy Loam, Silt Clay, Peat).
-                3. Surface moisture shine, cohesion, or cracking (estimated moisture %).
-                4. Compaction, aeration, and nutrient deficiency indicators.
+                Analyze this image captured for target crop: $crop.
+
+                CRITICAL AUTHENTICATION INSTRUCTION:
+                1. First, inspect the image to determine if it is a real soil, dirt, earth, compost, mud, or field ground sample.
+                2. If the image is NOT a soil sample (e.g. human face, body part, clothing, pet, animal, document, paper, sky, building, car, indoor furniture, screen, or non-soil object), you MUST set "isSoilSample": false, "soilType": "INVALID IMAGE DETECTED", "healthStatus": "INVALID IMAGE DETECTED", and "summary": "INVALID IMAGE DETECTED: The provided photo does not contain a recognized soil sample."
+                3. If it IS a valid soil sample, set "isSoilSample": true and provide normal agricultural soil health parameters.
 
                 Respond strictly with valid JSON conforming to this schema:
                 {
+                  "isSoilSample": true,
                   "soilType": "Clay Loam",
                   "healthScore": 78,
                   "healthStatus": "MODERATE NUTRIENT BALANCE",
@@ -163,6 +204,21 @@ class GeminiSoilRepository {
                 .trim()
 
             val parsedObj = JSONObject(cleanedJson)
+
+            val isSoilSample = parsedObj.optBoolean("isSoilSample", true)
+            val soilTypeStr = parsedObj.optString("soilType", "Clay Loam")
+            val healthStatusStr = parsedObj.optString("healthStatus", "MODERATE NUTRIENT BALANCE")
+            val summaryStr = parsedObj.optString("summary", "")
+
+            if (!isSoilSample ||
+                soilTypeStr.contains("INVALID IMAGE DETECTED", ignoreCase = true) ||
+                healthStatusStr.contains("INVALID IMAGE DETECTED", ignoreCase = true) ||
+                summaryStr.contains("INVALID IMAGE DETECTED", ignoreCase = true)
+            ) {
+                return@withContext Result.failure(
+                    Exception("INVALID IMAGE DETECTED: The camera detected a non-soil image or invalid sample. Results were automatically invalidated. Please align camera on an actual soil surface and try again.")
+                )
+            }
 
             val recsArray = parsedObj.optJSONArray("recommendations")
             val recsList = mutableListOf<String>()

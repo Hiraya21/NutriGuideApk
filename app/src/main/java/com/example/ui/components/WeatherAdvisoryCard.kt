@@ -140,7 +140,10 @@ fun WeatherAdvisoryCard(
                             text = selectedRegion.name,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = FarmTextDark
+                            color = FarmTextDark,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(

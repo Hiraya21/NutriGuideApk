@@ -59,6 +59,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -73,6 +74,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -97,6 +99,8 @@ import coil.compose.AsyncImage
 import com.example.ui.theme.FarmBorder
 import com.example.ui.theme.FarmBrownDark
 import com.example.ui.theme.FarmBrownHeader
+import com.example.domain.models.AppLanguage
+import com.example.ui.components.LanguageBar
 import com.example.ui.theme.FarmBrownLight
 import com.example.ui.theme.FarmBrownPrimary
 import com.example.ui.theme.FarmGreenHeader
@@ -135,6 +139,8 @@ fun SoilAnalysisScreen(
     onDeleteReport: (SoilReport) -> Unit,
     onSelectSavedReport: (SoilReport) -> Unit,
     onBack: () -> Unit,
+    currentLanguage: AppLanguage = AppLanguage.ENGLISH,
+    onLanguageSelected: (AppLanguage) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -165,6 +171,35 @@ fun SoilAnalysisScreen(
     var isSimulatingScan by remember { mutableStateOf(false) }
     var uploadedImageUri by remember { mutableStateOf<Uri?>(null) }
     var uploadedFileName by remember { mutableStateOf<String?>(null) }
+
+    // Visual Loading Indicator States for Gemini API & Camera Workflow
+    var scanProgress by remember { mutableFloatStateOf(0f) }
+    var scanStepText by remember { mutableStateOf("Initializing Gemini AI Analysis...") }
+
+    LaunchedEffect(isGeminiAnalyzing, isSimulatingScan) {
+        if (isGeminiAnalyzing || isSimulatingScan) {
+            scanProgress = 0.12f
+            scanStepText = "1/3: Capturing & pre-processing soil image..."
+            kotlinx.coroutines.delay(800)
+            if (isGeminiAnalyzing || isSimulatingScan) {
+                scanProgress = 0.42f
+                scanStepText = "2/3: Analyzing spectral chroma with Gemini 3.5 Flash..."
+            }
+            kotlinx.coroutines.delay(1400)
+            if (isGeminiAnalyzing || isSimulatingScan) {
+                scanProgress = 0.78f
+                scanStepText = "3/3: Extrapolating N-P-K nutrient values & pH level..."
+            }
+            kotlinx.coroutines.delay(1400)
+            if (isGeminiAnalyzing || isSimulatingScan) {
+                scanProgress = 0.95f
+                scanStepText = "3/3: Finalizing custom fertilizer plan..."
+            }
+        } else {
+            scanProgress = 0f
+            scanStepText = ""
+        }
+    }
 
     // Upload soil analysis report file (CSV/PDF/Image)
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -257,6 +292,13 @@ fun SoilAnalysisScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        // Language Bar
+        LanguageBar(
+            currentLanguage = currentLanguage,
+            onLanguageSelected = onLanguageSelected,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
         // Top Back Row & Header Title
         Row(
             modifier = Modifier
@@ -267,8 +309,15 @@ fun SoilAnalysisScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = FarmTextDark)
             }
+            val screenTitle = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "Soil Health Dashboard"
+                AppLanguage.TAGALOG -> "Dashboard ng Kalusugan ng Lupa"
+                AppLanguage.TAGLISH -> "Soil Health Dashboard"
+                AppLanguage.ILOCANO -> "Dashboard ti Daga"
+                AppLanguage.CEBUANO -> "Dashboard sa Kalusugan sa Yuta"
+            }
             Text(
-                text = "Soil Health Dashboard",
+                text = screenTitle,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = FarmTextDark,
@@ -305,15 +354,29 @@ fun SoilAnalysisScreen(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
+                    val bannerTitle = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "Soil Analysis & Health Dashboard"
+                        AppLanguage.TAGALOG -> "Pagsusuri sa Lupa at Kalusugan"
+                        AppLanguage.TAGLISH -> "Soil Analysis & Health Dashboard"
+                        AppLanguage.ILOCANO -> "Panagrukod ken Dashboard ti Daga"
+                        AppLanguage.CEBUANO -> "Pagsusi ug Dashboard sa Yuta"
+                    }
+                    val bannerDesc = when (currentLanguage) {
+                        AppLanguage.ENGLISH -> "Upload soil test data, scan chromatic samples, or enter lab metrics to view visual soil health diagnostics."
+                        AppLanguage.TAGALOG -> "Kumuha ng litrato ng lupa o ipasok ang resulta sa lab para sa pagsusuri ng kalusugan ng lupa."
+                        AppLanguage.TAGLISH -> "Upload soil test data, mag-scan ng soil photo, o mag-enter ng lab metrics."
+                        AppLanguage.ILOCANO -> "Mangikabil ti litrato ti daga wenno datos ti lab tapno makita ti sukat ti daga."
+                        AppLanguage.CEBUANO -> "I-upload ang litrato sa yuta o ibutang ang lab data para sa pagsusi sa yuta."
+                    }
                     Text(
-                        text = "Soil Analysis & Health Dashboard",
+                        text = bannerTitle,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = FarmTextDark
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Upload soil test data, scan chromatic samples, or enter lab metrics to view visual soil health diagnostics.",
+                        text = bannerDesc,
                         fontSize = 12.sp,
                         color = FarmTextSecondary,
                         lineHeight = 16.sp
@@ -323,17 +386,79 @@ fun SoilAnalysisScreen(
         }
 
         if (geminiError != null) {
+            val isInvalidImage = geminiError.contains("INVALID IMAGE DETECTED", ignoreCase = true)
             AlertDialog(
-                onDismissRequest = { onDismissGeminiError?.invoke() },
-                icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFD32F2F)) },
-                title = { Text("Gemini Soil Analysis Notice") },
-                text = { Text(geminiError) },
+                onDismissRequest = {
+                    uploadedImageUri = null
+                    uploadedFileName = null
+                    selectedTab = 0
+                    scanProgress = 0f
+                    onDismissGeminiError?.invoke()
+                },
+                containerColor = Color.White,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Color(0xFFD32F2F),
+                        modifier = Modifier.size(36.dp)
+                    )
+                },
+                title = {
+                    Text(
+                        text = if (isInvalidImage) "INVALID IMAGE DETECTED" else "Gemini Soil Analysis Notice",
+                        fontWeight = FontWeight.Bold,
+                        color = if (isInvalidImage) Color(0xFFD32F2F) else Color(0xFF212121),
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    if (isInvalidImage) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "The scanned image is non-soil or unreadable. Analysis results have been automatically invalidated.",
+                                fontSize = 13.sp,
+                                color = Color(0xFF424242),
+                                lineHeight = 18.sp,
+                                fontWeight = FontWeight.Normal
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = geminiError,
+                            fontSize = 13.sp,
+                            color = Color(0xFF212121),
+                            lineHeight = 18.sp
+                        )
+                    }
+                },
                 confirmButton = {
                     Button(
-                        onClick = { onDismissGeminiError?.invoke() },
-                        colors = ButtonDefaults.buttonColors(containerColor = FarmBrownDark)
+                        onClick = {
+                            uploadedImageUri = null
+                            uploadedFileName = null
+                            selectedTab = 0
+                            scanProgress = 0f
+                            onDismissGeminiError?.invoke()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isInvalidImage) Color(0xFFD32F2F) else FarmBrownDark
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("OK")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isInvalidImage) {
+                                Icon(Icons.Default.RestartAlt, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("RESTART SCANNING", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                            } else {
+                                Text("OK", fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
                     }
                 }
             )
@@ -355,9 +480,38 @@ fun SoilAnalysisScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val tab0Text = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "Upload/Scan"
+                    AppLanguage.TAGALOG -> "Litratuhan"
+                    AppLanguage.TAGLISH -> "Upload/Scan"
+                    AppLanguage.ILOCANO -> "Litrato"
+                    AppLanguage.CEBUANO -> "Litrato sa Yuta"
+                }
+                val tab1Text = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "Lab Input"
+                    AppLanguage.TAGALOG -> "Mano-mano"
+                    AppLanguage.TAGLISH -> "Lab Input"
+                    AppLanguage.ILOCANO -> "Isurat"
+                    AppLanguage.CEBUANO -> "Ibutang"
+                }
+                val tab2Text = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "Dashboard"
+                    AppLanguage.TAGALOG -> "Dashboard"
+                    AppLanguage.TAGLISH -> "Dashboard"
+                    AppLanguage.ILOCANO -> "Dashboard"
+                    AppLanguage.CEBUANO -> "Dashboard"
+                }
+                val tab3Text = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "History (${savedReports.size})"
+                    AppLanguage.TAGALOG -> "Talaan (${savedReports.size})"
+                    AppLanguage.TAGLISH -> "History (${savedReports.size})"
+                    AppLanguage.ILOCANO -> "Nakalabas (${savedReports.size})"
+                    AppLanguage.CEBUANO -> "Agi-an (${savedReports.size})"
+                }
+
                 // Tab 0: Upload / Scan
                 TabButton(
-                    title = "Upload/Scan",
+                    title = tab0Text,
                     icon = Icons.Default.FileUpload,
                     isSelected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
@@ -366,7 +520,7 @@ fun SoilAnalysisScreen(
 
                 // Tab 1: Input Form
                 TabButton(
-                    title = "Lab Input",
+                    title = tab1Text,
                     icon = Icons.Default.Edit,
                     isSelected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
@@ -375,7 +529,7 @@ fun SoilAnalysisScreen(
 
                 // Tab 2: Dashboard
                 TabButton(
-                    title = "Dashboard",
+                    title = tab2Text,
                     icon = Icons.Default.BarChart,
                     isSelected = selectedTab == 2,
                     onClick = {
@@ -389,7 +543,7 @@ fun SoilAnalysisScreen(
 
                 // Tab 3: History
                 TabButton(
-                    title = "History (${savedReports.size})",
+                    title = tab3Text,
                     icon = Icons.Default.AccessTime,
                     isSelected = selectedTab == 3,
                     onClick = { selectedTab = 3 },
@@ -416,6 +570,7 @@ fun SoilAnalysisScreen(
                                 triggerImageAnalysis()
                             }
                         },
+                        enabled = !isGeminiAnalyzing && !isSimulatingScan,
                         modifier = Modifier
                             .weight(1f)
                             .height(46.dp)
@@ -423,19 +578,30 @@ fun SoilAnalysisScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A3225))
                     ) {
-                        Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (!hasCameraPermission) "Enable Camera" else "Snap Photo",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (isGeminiAnalyzing || isSimulatingScan) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Scanning...", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        } else {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (!hasCameraPermission) "Enable Camera" else "Snap Photo",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     Button(
                         onClick = {
                             filePickerLauncher.launch("*/*")
                         },
+                        enabled = !isGeminiAnalyzing && !isSimulatingScan,
                         modifier = Modifier
                             .weight(1f)
                             .height(46.dp)
@@ -443,9 +609,19 @@ fun SoilAnalysisScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                     ) {
-                        Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Upload Report/Image", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        if (isGeminiAnalyzing || isSimulatingScan) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Processing...", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        } else {
+                            Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Upload Report/Image", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
 
@@ -534,36 +710,104 @@ fun SoilAnalysisScreen(
                         }
                     }
 
-                    // Reticle Focus Target
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(70.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color.Black.copy(alpha = 0.35f))
-                                .border(2.dp, FarmYellowAccent.copy(alpha = 0.8f), RoundedCornerShape(16.dp)),
-                            contentAlignment = Alignment.Center
+                    // Reticle Focus Target (shown when not processing)
+                    if (!isGeminiAnalyzing && !isSimulatingScan) {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.CenterFocusWeak,
-                                contentDescription = "Reticle",
-                                tint = Color.White,
-                                modifier = Modifier.size(36.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(70.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.Black.copy(alpha = 0.35f))
+                                    .border(2.dp, FarmYellowAccent.copy(alpha = 0.8f), RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CenterFocusWeak,
+                                    contentDescription = "Reticle",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Align soil sample in target reticle",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier
+                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = if (isGeminiAnalyzing || isSimulatingScan) "Gemini AI Analyzing Soil Image..." else "Align sample in target reticle",
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
+                    }
+
+                    // Interactive Loading Overlay during Gemini / Camera Analysis
+                    if (isGeminiAnalyzing || isSimulatingScan) {
+                        Box(
                             modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.88f))
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(
+                                        progress = { scanProgress },
+                                        modifier = Modifier.size(64.dp),
+                                        color = FarmYellowAccent,
+                                        trackColor = Color.White.copy(alpha = 0.2f),
+                                        strokeWidth = 4.dp
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = FarmYellowAccent,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Text(
+                                    text = "${(scanProgress * 100).toInt()}% Analysed",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                LinearProgressIndicator(
+                                    progress = { scanProgress },
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.82f)
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
+                                    color = FarmYellowAccent,
+                                    trackColor = Color.White.copy(alpha = 0.2f)
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = scanStepText,
+                                    color = Color.White.copy(alpha = 0.95f),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
                     }
 
                     // Bottom Scan Action Button
@@ -581,13 +825,18 @@ fun SoilAnalysisScreen(
                     ) {
                         if (isGeminiAnalyzing || isSimulatingScan) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                androidx.compose.material3.CircularProgressIndicator(
+                                CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),
                                     color = Color.White,
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Analyzing Soil with Gemini 3.5 Flash...", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "Analyzing Soil... (${(scanProgress * 100).toInt()}%)",
+                                    fontSize = 12.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         } else {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -605,6 +854,60 @@ fun SoilAnalysisScreen(
                             onGenerateCustom(crop, selectedSwatch, "Low", "Medium", "Medium", "2-4%", 6.2, 48.0)
                             selectedTab = 2 // Switch to Dashboard
                             Toast.makeText(context, "Soil Analysis Complete! Displaying Dashboard.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
+                // Floating Gemini Analysis Status Card
+                if (isGeminiAnalyzing || isSimulatingScan) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF281C15)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, FarmYellowAccent.copy(alpha = 0.6f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = FarmYellowAccent,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Gemini 3.5 Flash Processing Image...",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = scanStepText,
+                                        fontSize = 10.sp,
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
+                                Text(
+                                    text = "${(scanProgress * 100).toInt()}%",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = FarmYellowAccent
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(
+                                progress = { scanProgress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .clip(RoundedCornerShape(2.dp)),
+                                color = FarmYellowAccent,
+                                trackColor = Color.White.copy(alpha = 0.2f)
+                            )
                         }
                     }
                 }
@@ -1013,7 +1316,9 @@ fun TabButton(
                 fontSize = 10.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 color = if (isSelected) FarmTextDark else FarmTextSecondary,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }

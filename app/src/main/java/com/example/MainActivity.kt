@@ -20,6 +20,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import com.example.domain.models.AppLanguage
+import com.example.domain.models.GuideArticle
 import com.example.ui.components.BottomNavBar
 import com.example.ui.components.DeleteAccountModal
 import com.example.ui.components.SplashScreen
@@ -194,12 +196,16 @@ fun RiceFarmAssistantApp(
                     onSaveReport = { viewModel.saveActiveSoilReport() },
                     onDeleteReport = { viewModel.deleteSoilReport(it) },
                     onSelectSavedReport = { viewModel.selectSavedSoilReport(it) },
-                    onBack = { isSoilAnalysisOpen = false }
+                    onBack = { isSoilAnalysisOpen = false },
+                    currentLanguage = currentLanguage,
+                    onLanguageSelected = { viewModel.setLanguage(it) }
                 )
             } else if (selectedGuide != null) {
                 GuideDetailScreen(
                     article = selectedGuide!!,
-                    onBack = { viewModel.closeGuide() }
+                    onBack = { viewModel.closeGuide() },
+                    currentLanguage = currentLanguage,
+                    onLanguageSelected = { viewModel.setLanguage(it) }
                 )
             } else {
                 when (currentTab) {
@@ -271,7 +277,9 @@ fun RiceFarmAssistantApp(
                         searchQuery = bookletSearchQuery,
                         articles = bookletArticles,
                         onSearchChange = { viewModel.setBookletSearchQuery(it) },
-                        onSelectGuide = { article -> viewModel.openGuide(article) }
+                        onSelectGuide = { article -> viewModel.openGuide(article) },
+                        currentLanguage = currentLanguage,
+                        onLanguageSelected = { viewModel.setLanguage(it) }
                     )
                     4 -> HistoryScreen(
                         searchQuery = historySearchQuery,
@@ -281,7 +289,9 @@ fun RiceFarmAssistantApp(
                         onSearchChange = { viewModel.setHistorySearchQuery(it) },
                         onDeleteFarm = { farm -> viewModel.deleteFarmRecord(farm) },
                         onDeleteAllFarms = { viewModel.deleteAllFarms() },
-                        onOpenDeleteAccount = { viewModel.openDeleteAccountModal() }
+                        onOpenDeleteAccount = { viewModel.openDeleteAccountModal() },
+                        currentLanguage = currentLanguage,
+                        onLanguageSelected = { viewModel.setLanguage(it) }
                     )
                 }
             }

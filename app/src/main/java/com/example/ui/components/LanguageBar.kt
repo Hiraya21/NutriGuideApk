@@ -49,7 +49,9 @@ fun LanguageBar(
         )
 
         Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            modifier = Modifier
+                .weight(1f)
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             AppLanguage.values().forEach { lang ->

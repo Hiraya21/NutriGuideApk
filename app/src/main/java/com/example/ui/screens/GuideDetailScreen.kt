@@ -42,10 +42,15 @@ import com.example.ui.theme.FarmGreenPrimary
 import com.example.ui.theme.FarmTextDark
 import com.example.ui.theme.FarmTextSecondary
 
+import com.example.domain.models.AppLanguage
+import com.example.ui.components.LanguageBar
+
 @Composable
 fun GuideDetailScreen(
     article: GuideArticle,
     onBack: () -> Unit,
+    currentLanguage: AppLanguage = AppLanguage.ENGLISH,
+    onLanguageSelected: (AppLanguage) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -55,6 +60,13 @@ fun GuideDetailScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        // Language Bar
+        LanguageBar(
+            currentLanguage = currentLanguage,
+            onLanguageSelected = onLanguageSelected,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
         // Top Bar
         Row(
             modifier = Modifier
@@ -65,8 +77,15 @@ fun GuideDetailScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = FarmTextDark)
             }
+            val titleText = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "Guide"
+                AppLanguage.TAGALOG -> "Gabay"
+                AppLanguage.TAGLISH -> "Guide"
+                AppLanguage.ILOCANO -> "Gabay"
+                AppLanguage.CEBUANO -> "Giya"
+            }
             Text(
-                text = "Guide",
+                text = titleText,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = FarmTextDark,
@@ -117,8 +136,15 @@ fun GuideDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Back Link
+                val backLinkText = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "← Back to all guides"
+                    AppLanguage.TAGALOG -> "← Bumalik sa lahat ng gabay"
+                    AppLanguage.TAGLISH -> "← Back to all guides"
+                    AppLanguage.ILOCANO -> "← Agsubli iti amin a gabay"
+                    AppLanguage.CEBUANO -> "← Balik sa tanan nga giyahan"
+                }
                 Text(
-                    text = "← Back to all guides",
+                    text = backLinkText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = FarmGreenPrimary,
