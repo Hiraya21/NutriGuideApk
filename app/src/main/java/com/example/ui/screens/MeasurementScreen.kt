@@ -40,8 +40,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
@@ -51,6 +61,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.HelpOutline
@@ -212,7 +224,7 @@ fun MeasurementScreen(
     var showOnboardingDialog by rememberSaveable { mutableStateOf(true) }
 
     // Adjustable Camera Size State (160dp, 220dp, 300dp, 380dp)
-    var cameraHeightDp by rememberSaveable { mutableStateOf(200) }
+    var cameraHeightDp by rememberSaveable { mutableStateOf(300) }
     var isCameraFullScreen by rememberSaveable { mutableStateOf(false) }
 
     // Device-to-Device Mark Point State
@@ -464,7 +476,9 @@ fun MeasurementScreen(
                     onUndoPoint = onUndoPoint,
                     onDeletePointAt = onDeletePointAt,
                     onClearPoints = onClearPoints,
-                    onSaveFarm = onSaveFarm
+                    onSaveFarm = onSaveFarm,
+                    isFullScreen = false,
+                    onToggleFullScreen = { isCameraFullScreen = true }
                 )
             } else {
                 Box(
@@ -486,71 +500,6 @@ fun MeasurementScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
-                }
-            }
-
-            // Top-left "Camera Preview" tag overlay
-            Box(
-                modifier = Modifier
-                    .padding(10.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .align(Alignment.TopStart)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(if (isTracking) Color(0xFF00E676) else Color.Yellow)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Sensor AR View (${cameraHeightDp}dp)",
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            // Top-right Controls: Point count badge + Fullscreen Icon Button
-            Row(
-                modifier = Modifier
-                    .padding(10.dp)
-                    .align(Alignment.TopEnd),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "${boundaryPoints.size} pts",
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                IconButton(
-                    onClick = { isCameraFullScreen = true },
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color.Black.copy(alpha = 0.7f))
-                        .testTag("btn_expand_fullscreen_cam")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Fullscreen,
-                        contentDescription = "Fullscreen Camera",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
                 }
             }
         }
@@ -577,7 +526,9 @@ fun MeasurementScreen(
                             onUndoPoint = onUndoPoint,
                             onDeletePointAt = onDeletePointAt,
                             onClearPoints = onClearPoints,
-                            onSaveFarm = onSaveFarm
+                            onSaveFarm = onSaveFarm,
+                            isFullScreen = true,
+                            onToggleFullScreen = { isCameraFullScreen = false }
                         )
                     } else {
                         Box(
@@ -587,65 +538,6 @@ fun MeasurementScreen(
                             Text("Camera Active Sensor in Fullscreen", color = Color.White)
                         }
                     }
-
-                    // Top Bar Controls in Fullscreen
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 40.dp, start = 16.dp, end = 16.dp)
-                            .align(Alignment.TopStart),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color.Black.copy(alpha = 0.8f))
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .clip(RoundedCornerShape(5.dp))
-                                        .background(if (isTracking) Color(0xFF00E676) else Color.Yellow)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = "AR CAMERA FULLSCREEN",
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "${boundaryPoints.size} Points | Path: ${String.format("%.1f", walkingMeters)}m",
-                                        color = Color(0xFF00E676),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-                        }
-
-                        IconButton(
-                            onClick = { isCameraFullScreen = false },
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(RoundedCornerShape(21.dp))
-                                .background(Color.Black.copy(alpha = 0.8f))
-                                .testTag("btn_exit_fullscreen_camera")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FullscreenExit,
-                                contentDescription = "Exit Fullscreen",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-
-                    // Note: ArFieldMeasurementTapeOverlay provides the unified AR measurement controls
                 }
             }
         }
@@ -1414,6 +1306,8 @@ fun ArFieldMeasurementTapeOverlay(
     onDeletePointAt: (Int) -> Unit = {},
     onClearPoints: () -> Unit,
     onSaveFarm: (String) -> Unit = {},
+    isFullScreen: Boolean = false,
+    onToggleFullScreen: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -1424,8 +1318,20 @@ fun ArFieldMeasurementTapeOverlay(
     var yawOffset by remember { mutableFloatStateOf(0f) }
     var pitchOffset by remember { mutableFloatStateOf(0f) }
 
-    var isHudExpanded by remember { mutableStateOf(true) }
+    var isHudExpanded by remember { mutableStateOf(false) }
     var isTrackingUnstable by remember { mutableStateOf(false) }
+    var showQuickStartGuide by remember { mutableStateOf(true) }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "ar_quickstart_panning")
+    val phonePanOffset by infiniteTransition.animateFloat(
+        initialValue = -50f,
+        targetValue = 50f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "phonePanOffset"
+    )
 
     var showDeletePointDialog by remember { mutableStateOf(false) }
     var showFinishMeasurementDialog by remember { mutableStateOf(false) }
@@ -1565,552 +1471,247 @@ fun ArFieldMeasurementTapeOverlay(
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val isLandscape = maxWidth > maxHeight
 
-        Scaffold(
-            containerColor = Color.Transparent,
-            bottomBar = {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    color = Color.Black.copy(alpha = 0.85f),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
-                ) {
-                    if (isLandscape) {
-                        // Responsive Landscape Layout: Single compact Row to preserve vertical viewport space
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // ADD POINT BUTTON
-                            Button(
-                                onClick = {
-                                    if (isTrackingUnstable) {
-                                        Toast.makeText(context, "Tracking Lost – Move phone slowly or tap Recalibrate first", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        onMarkPoint()
-                                    }
-                                },
-                                modifier = Modifier
-                                    .weight(1.3f)
-                                    .height(40.dp)
-                                    .testTag("btn_ar_add_point"),
-                                colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader),
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 6.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        text = if (boundaryPoints.isEmpty()) "Add Point A" else "Add Point ${letters[boundaryPoints.size % letters.size]}",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp
-                                    )
-                                }
-                            }
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 1. Interactive 3D Spatial Canvas
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                val centerX = w * 0.5f
+                val centerY = h * 0.5f
 
-                            // FINISH MEASUREMENT BUTTON
-                            if (boundaryPoints.size >= 2) {
-                                Button(
-                                    onClick = { showFinishMeasurementDialog = true },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(40.dp)
-                                        .testTag("btn_ar_finish_measurement"),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                                    shape = RoundedCornerShape(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(3.dp))
-                                        Text("Finish", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                    }
-                                }
-                            }
+                val netYaw = yaw - yawOffset
+                val netPitch = pitch - pitchOffset
 
-                            if (boundaryPoints.isNotEmpty()) {
-                                // UNDO BUTTON
-                                Button(
-                                    onClick = onUndoPoint,
-                                    modifier = Modifier
-                                        .weight(0.9f)
-                                        .height(40.dp)
-                                        .testTag("btn_ar_undo_point"),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
-                                    shape = RoundedCornerShape(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                        Spacer(modifier = Modifier.width(2.dp))
-                                        Text("Undo", fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                                    }
-                                }
+                // Calculate Projected AR Screen Coordinates for Saved Points
+                val projectedPoints = mutableListOf<Offset>()
+                for (i in boundaryPoints.indices) {
+                    val sYaw = if (i < savedYaws.size) savedYaws[i] else (i * 60.0f)
+                    val sPitch = if (i < savedPitches.size) savedPitches[i] else 0f
 
-                                // DELETE POINT BUTTON
-                                Button(
-                                    onClick = { showDeletePointDialog = true },
-                                    modifier = Modifier
-                                        .weight(0.9f)
-                                        .height(40.dp)
-                                        .testTag("btn_ar_delete_point"),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00838F)),
-                                    shape = RoundedCornerShape(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                        Spacer(modifier = Modifier.width(2.dp))
-                                        Text("Delete", fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                                    }
-                                }
+                    val relYawDeg = (sYaw - netYaw)
+                    val relPitchDeg = (sPitch - netPitch)
 
-                                // CLEAR BUTTON
-                                Button(
-                                    onClick = onClearPoints,
-                                    modifier = Modifier
-                                        .weight(0.9f)
-                                        .height(40.dp)
-                                        .testTag("btn_ar_clear_points"),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
-                                    shape = RoundedCornerShape(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(imageVector = Icons.Default.DeleteOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                        Spacer(modifier = Modifier.width(2.dp))
-                                        Text("Clear", fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                                    }
-                                }
-                            }
+                    val relYawRad = Math.toRadians(relYawDeg.toDouble()).toFloat()
+                    val relPitchRad = Math.toRadians(relPitchDeg.toDouble()).toFloat()
+
+                    val px = centerX + (w * 0.42f) * kotlin.math.sin(relYawRad)
+                    val py = (centerY + 30f) + (h * 0.35f) * kotlin.math.sin(relPitchRad)
+                    projectedPoints.add(Offset(px, py))
+                }
+
+                // Draw Closed Field Polygon Tint on Camera Surface if >= 3 points
+                if (projectedPoints.size >= 3) {
+                    val polyPath = Path().apply {
+                        moveTo(projectedPoints[0].x, projectedPoints[0].y)
+                        for (i in 1 until projectedPoints.size) {
+                            lineTo(projectedPoints[i].x, projectedPoints[i].y)
                         }
+                        close()
+                    }
+                    drawPath(path = polyPath, color = Color(0x3500E676))
+                }
+
+                // Draw Saved Point-to-Point AR Measurement Lines
+                for (i in 0 until projectedPoints.size) {
+                    val nextIdx = (i + 1) % projectedPoints.size
+                    if (nextIdx != 0 || projectedPoints.size >= 3) {
+                        val p1 = projectedPoints[i]
+                        val p2 = projectedPoints[nextIdx]
+
+                        // Glowing AR Segment Line
+                        drawLine(
+                            color = Color(0x4000E676),
+                            start = p1,
+                            end = p2,
+                            strokeWidth = 14f
+                        )
+                        drawLine(
+                            color = Color(0xFF00E676),
+                            start = p1,
+                            end = p2,
+                            strokeWidth = 5f
+                        )
+
+                        // Line Segment Midpoint
+                        val midX = (p1.x + p2.x) / 2f
+                        val midY = (p1.y + p2.y) / 2f
+
+                        // Draw floating AR segment midpoint marker
+                        drawCircle(color = Color.Black.copy(alpha = 0.85f), radius = 18f, center = Offset(midX, midY))
+                        drawCircle(color = Color(0xFF00E676), radius = 18f, center = Offset(midX, midY), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f))
+
+                        // Draw Segment Distance Text Label on Line
+                        val segDist = if (i < segments.size) segments[i].distanceMeters else 0.0
+                        val segLabel = "${letters[i % letters.size]}━━${letters[nextIdx % letters.size]}: ${String.format("%.1f", segDist)}m"
+                        val textPaint = android.graphics.Paint().apply {
+                            color = android.graphics.Color.WHITE
+                            textSize = 22f
+                            isFakeBoldText = true
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                        val bgPaint = android.graphics.Paint().apply {
+                            color = android.graphics.Color.argb(210, 0, 0, 0)
+                            style = android.graphics.Paint.Style.FILL
+                        }
+                        val rect = android.graphics.RectF(midX - 58f, midY - 32f, midX + 58f, midY - 6f)
+                        drawContext.canvas.nativeCanvas.drawRoundRect(rect, 10f, 10f, bgPaint)
+                        drawContext.canvas.nativeCanvas.drawText(segLabel, midX, midY - 14f, textPaint)
+                    }
+                }
+
+                // Live AR Measuring Tape Line (from last point to screen center target crosshair)
+                if (projectedPoints.isNotEmpty()) {
+                    val lastProj = projectedPoints.last()
+                    val targetCenter = Offset(centerX, centerY)
+
+                    // Dashed gold laser tape line
+                    drawLine(
+                        color = Color(0xFFE040FB),
+                        start = lastProj,
+                        end = targetCenter,
+                        strokeWidth = 7f,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 10f), 0f)
+                    )
+                    drawLine(
+                        color = Color(0xFFFFD600),
+                        start = lastProj,
+                        end = targetCenter,
+                        strokeWidth = 3.5f
+                    )
+
+                    // Midpoint of live tape line
+                    val tapeMidX = (lastProj.x + targetCenter.x) / 2f
+                    val tapeMidY = (lastProj.y + targetCenter.y) / 2f
+
+                    // Pulsing AR Live Tape Marker Ring
+                    drawCircle(color = Color(0xFFFFD600), radius = 22f, center = Offset(tapeMidX, tapeMidY), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+                    drawCircle(color = Color.Black.copy(alpha = 0.8f), radius = 20f, center = Offset(tapeMidX, tapeMidY))
+                }
+
+                // Draw Anchored AR Pins & Letter Tags for each saved point
+                val letterPaint = android.graphics.Paint().apply {
+                    color = android.graphics.Color.WHITE
+                    textSize = 24f
+                    isFakeBoldText = true
+                    textAlign = android.graphics.Paint.Align.CENTER
+                }
+
+                for (i in projectedPoints.indices) {
+                    val pt = projectedPoints[i]
+                    val letter = letters[i % letters.size]
+
+                    // Glowing ground anchor circle
+                    drawCircle(color = Color(0x3000E676), radius = 26f, center = pt)
+                    drawCircle(color = Color(0xFF00E676), radius = 18f, center = pt, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
+
+                    // AR Pin Line
+                    drawLine(
+                        color = Color.White,
+                        start = pt,
+                        end = Offset(pt.x, pt.y - 36f),
+                        strokeWidth = 3.5f
+                    )
+
+                    // Top Pin Head Letter Badge
+                    val headCenter = Offset(pt.x, pt.y - 48f)
+                    drawCircle(color = Color(0xFF1B5E20), radius = 20f, center = headCenter)
+                    drawCircle(color = Color.White, radius = 20f, center = headCenter, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f))
+
+                    // Draw Letter inside Pin Head
+                    drawContext.canvas.nativeCanvas.drawText(letter, headCenter.x, headCenter.y + 8f, letterPaint)
+                }
+
+                // Center Target Crosshair Reticle (Digital AR Tape Aim Target)
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.3f),
+                    radius = 38f,
+                    center = Offset(centerX, centerY)
+                )
+                drawCircle(
+                    color = Color(0xFFFFD600),
+                    radius = 28f,
+                    center = Offset(centerX, centerY),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f))
+                )
+                drawCircle(
+                    color = Color(0xFFFFD600),
+                    radius = 4f,
+                    center = Offset(centerX, centerY)
+                )
+
+                // Crosshair lines
+                drawLine(color = Color.White, start = Offset(centerX - 36f, centerY), end = Offset(centerX - 10f, centerY), strokeWidth = 3f)
+                drawLine(color = Color.White, start = Offset(centerX + 10f, centerY), end = Offset(centerX + 36f, centerY), strokeWidth = 3f)
+                drawLine(color = Color.White, start = Offset(centerX, centerY - 36f), end = Offset(centerX, centerY - 10f), strokeWidth = 3f)
+                drawLine(color = Color.White, start = Offset(centerX, centerY + 10f), end = Offset(centerX, centerY + 36f), strokeWidth = 3f)
+
+                // Leveling horizon balance line
+                val rollRad = Math.toRadians(roll.toDouble())
+                val dx = kotlin.math.cos(rollRad).toFloat() * 45f
+                val dy = kotlin.math.sin(rollRad).toFloat() * 45f
+                drawLine(
+                    color = if (kotlin.math.abs(roll) < 5f) Color(0xFF00E676) else Color.Yellow,
+                    start = Offset(centerX - dx, centerY + dy),
+                    end = Offset(centerX + dx, centerY - dy),
+                    strokeWidth = 2.5f
+                )
+            }
+
+            // Live AR Tape Floating Distance Badge centered directly under Crosshair
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(top = 54.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.Black.copy(alpha = 0.85f))
+                    .border(1.5.dp, if (boundaryPoints.isNotEmpty()) Color(0xFFFFD600) else Color(0xFF00E676), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 12.dp, vertical = 5.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Straighten,
+                        contentDescription = null,
+                        tint = if (boundaryPoints.isNotEmpty()) Color(0xFFFFD600) else Color(0xFF00E676),
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    if (boundaryPoints.isEmpty()) {
+                        Text(
+                            text = "Point camera at corner 1 & tap 'Add Point'",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     } else {
-                        // Portrait Mode: 2-Row Stacked Responsive Panel
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            // Top Primary Row: Add Point & Finish
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // ADD POINT BUTTON
-                                Button(
-                                    onClick = {
-                                        if (isTrackingUnstable) {
-                                            Toast.makeText(context, "Tracking Lost – Move phone slowly or tap Recalibrate first", Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            onMarkPoint()
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .weight(1.5f)
-                                        .height(44.dp)
-                                        .testTag("btn_ar_add_point"),
-                                    colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader),
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = if (boundaryPoints.isEmpty()) "Add Point A" else "Add Point ${letters[boundaryPoints.size % letters.size]}",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                }
-
-                                // FINISH MEASUREMENT BUTTON (Visible when >= 2 points)
-                                if (boundaryPoints.size >= 2) {
-                                    Button(
-                                        onClick = { showFinishMeasurementDialog = true },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(44.dp)
-                                            .testTag("btn_ar_finish_measurement"),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text("Finish", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Bottom Secondary Row: Undo, Delete, Clear
-                            if (boundaryPoints.isNotEmpty()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    // UNDO BUTTON
-                                    Button(
-                                        onClick = onUndoPoint,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(38.dp)
-                                            .testTag("btn_ar_undo_point"),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 4.dp)
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                            Spacer(modifier = Modifier.width(3.dp))
-                                            Text("Undo", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                        }
-                                    }
-
-                                    // DELETE POINT BUTTON (opens list)
-                                    Button(
-                                        onClick = { showDeletePointDialog = true },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(38.dp)
-                                            .testTag("btn_ar_delete_point"),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00838F)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 4.dp)
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                            Spacer(modifier = Modifier.width(3.dp))
-                                            Text("Delete", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                        }
-                                    }
-
-                                    // CLEAR BUTTON
-                                    Button(
-                                        onClick = onClearPoints,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(38.dp)
-                                            .testTag("btn_ar_clear_points"),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 4.dp)
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(imageVector = Icons.Default.DeleteOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                            Spacer(modifier = Modifier.width(3.dp))
-                                            Text("Clear", fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        val lastLetter = letters[(boundaryPoints.size - 1) % letters.size]
+                        val nextLetter = letters[boundaryPoints.size % letters.size]
+                        Text(
+                            text = "Live Tape ($lastLetter → $nextLetter): ${String.format("%.2f", liveDistanceMeters)} m",
+                            color = Color(0xFFFFD600),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
                     }
                 }
             }
-        ) { innerPadding ->
-            Box(
+
+            // TOP CONTROLS ROW (HUD on Top-Left, Quick Controls on Top-Right)
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                // 1. Interactive 3D Spatial Canvas
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val w = size.width
-                    val h = size.height
-                    val centerX = w * 0.5f
-                    val centerY = h * 0.5f
-
-                    val netYaw = yaw - yawOffset
-                    val netPitch = pitch - pitchOffset
-
-                    // Calculate Projected AR Screen Coordinates for Saved Points
-                    val projectedPoints = mutableListOf<Offset>()
-                    for (i in boundaryPoints.indices) {
-                        val sYaw = if (i < savedYaws.size) savedYaws[i] else (i * 60.0f)
-                        val sPitch = if (i < savedPitches.size) savedPitches[i] else 0f
-
-                        val relYawDeg = (sYaw - netYaw)
-                        val relPitchDeg = (sPitch - netPitch)
-
-                        val relYawRad = Math.toRadians(relYawDeg.toDouble()).toFloat()
-                        val relPitchRad = Math.toRadians(relPitchDeg.toDouble()).toFloat()
-
-                        val px = centerX + (w * 0.42f) * kotlin.math.sin(relYawRad)
-                        val py = (centerY + 30f) + (h * 0.35f) * kotlin.math.sin(relPitchRad)
-                        projectedPoints.add(Offset(px, py))
-                    }
-
-                    // Draw Closed Field Polygon Tint on Camera Surface if >= 3 points
-                    if (projectedPoints.size >= 3) {
-                        val polyPath = Path().apply {
-                            moveTo(projectedPoints[0].x, projectedPoints[0].y)
-                            for (i in 1 until projectedPoints.size) {
-                                lineTo(projectedPoints[i].x, projectedPoints[i].y)
-                            }
-                            close()
-                        }
-                        drawPath(path = polyPath, color = Color(0x3500E676))
-                    }
-
-                    // Draw Saved Point-to-Point AR Measurement Lines
-                    for (i in 0 until projectedPoints.size) {
-                        val nextIdx = (i + 1) % projectedPoints.size
-                        if (nextIdx != 0 || projectedPoints.size >= 3) {
-                            val p1 = projectedPoints[i]
-                            val p2 = projectedPoints[nextIdx]
-
-                            // Glowing AR Segment Line
-                            drawLine(
-                                color = Color(0x4000E676),
-                                start = p1,
-                                end = p2,
-                                strokeWidth = 14f
-                            )
-                            drawLine(
-                                color = Color(0xFF00E676),
-                                start = p1,
-                                end = p2,
-                                strokeWidth = 5f
-                            )
-
-                            // Line Segment Midpoint
-                            val midX = (p1.x + p2.x) / 2f
-                            val midY = (p1.y + p2.y) / 2f
-
-                            // Draw floating AR segment midpoint marker
-                            drawCircle(color = Color.Black.copy(alpha = 0.85f), radius = 18f, center = Offset(midX, midY))
-                            drawCircle(color = Color(0xFF00E676), radius = 18f, center = Offset(midX, midY), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f))
-
-                            // Draw Segment Distance Text Label on Line
-                            val segDist = if (i < segments.size) segments[i].distanceMeters else 0.0
-                            val segLabel = "${letters[i % letters.size]}━━${letters[nextIdx % letters.size]}: ${String.format("%.1f", segDist)}m"
-                            val textPaint = android.graphics.Paint().apply {
-                                color = android.graphics.Color.WHITE
-                                textSize = 22f
-                                isFakeBoldText = true
-                                textAlign = android.graphics.Paint.Align.CENTER
-                            }
-                            val bgPaint = android.graphics.Paint().apply {
-                                color = android.graphics.Color.argb(210, 0, 0, 0)
-                                style = android.graphics.Paint.Style.FILL
-                            }
-                            val rect = android.graphics.RectF(midX - 58f, midY - 32f, midX + 58f, midY - 6f)
-                            drawContext.canvas.nativeCanvas.drawRoundRect(rect, 10f, 10f, bgPaint)
-                            drawContext.canvas.nativeCanvas.drawText(segLabel, midX, midY - 14f, textPaint)
-                        }
-                    }
-
-                    // Live AR Measuring Tape Line (from last point to screen center target crosshair)
-                    if (projectedPoints.isNotEmpty()) {
-                        val lastProj = projectedPoints.last()
-                        val targetCenter = Offset(centerX, centerY)
-
-                        // Dashed gold laser tape line
-                        drawLine(
-                            color = Color(0xFFE040FB),
-                            start = lastProj,
-                            end = targetCenter,
-                            strokeWidth = 7f,
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 10f), 0f)
-                        )
-                        drawLine(
-                            color = Color(0xFFFFD600),
-                            start = lastProj,
-                            end = targetCenter,
-                            strokeWidth = 3.5f
-                        )
-
-                        // Midpoint of live tape line
-                        val tapeMidX = (lastProj.x + targetCenter.x) / 2f
-                        val tapeMidY = (lastProj.y + targetCenter.y) / 2f
-
-                        // Pulsing AR Live Tape Marker Ring
-                        drawCircle(color = Color(0xFFFFD600), radius = 22f, center = Offset(tapeMidX, tapeMidY), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
-                        drawCircle(color = Color.Black.copy(alpha = 0.8f), radius = 20f, center = Offset(tapeMidX, tapeMidY))
-                    }
-
-                    // Draw Anchored AR Pins & Letter Tags for each saved point
-                    val letterPaint = android.graphics.Paint().apply {
-                        color = android.graphics.Color.WHITE
-                        textSize = 24f
-                        isFakeBoldText = true
-                        textAlign = android.graphics.Paint.Align.CENTER
-                    }
-
-                    for (i in projectedPoints.indices) {
-                        val pt = projectedPoints[i]
-                        val letter = letters[i % letters.size]
-
-                        // Glowing ground anchor circle
-                        drawCircle(color = Color(0x3000E676), radius = 26f, center = pt)
-                        drawCircle(color = Color(0xFF00E676), radius = 18f, center = pt, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f))
-
-                        // AR Pin Line
-                        drawLine(
-                            color = Color.White,
-                            start = pt,
-                            end = Offset(pt.x, pt.y - 36f),
-                            strokeWidth = 3.5f
-                        )
-
-                        // Top Pin Head Letter Badge
-                        val headCenter = Offset(pt.x, pt.y - 48f)
-                        drawCircle(color = Color(0xFF1B5E20), radius = 20f, center = headCenter)
-                        drawCircle(color = Color.White, radius = 20f, center = headCenter, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f))
-
-                        // Draw Letter inside Pin Head
-                        drawContext.canvas.nativeCanvas.drawText(letter, headCenter.x, headCenter.y + 8f, letterPaint)
-                    }
-
-                    // Center Target Crosshair Reticle (Digital AR Tape Aim Target)
-                    drawCircle(
-                        color = Color.White.copy(alpha = 0.3f),
-                        radius = 38f,
-                        center = Offset(centerX, centerY)
-                    )
-                    drawCircle(
-                        color = Color(0xFFFFD600),
-                        radius = 28f,
-                        center = Offset(centerX, centerY),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f))
-                    )
-                    drawCircle(
-                        color = Color(0xFFFFD600),
-                        radius = 4f,
-                        center = Offset(centerX, centerY)
-                    )
-
-                    // Crosshair lines
-                    drawLine(color = Color.White, start = Offset(centerX - 36f, centerY), end = Offset(centerX - 10f, centerY), strokeWidth = 3f)
-                    drawLine(color = Color.White, start = Offset(centerX + 10f, centerY), end = Offset(centerX + 36f, centerY), strokeWidth = 3f)
-                    drawLine(color = Color.White, start = Offset(centerX, centerY - 36f), end = Offset(centerX, centerY - 10f), strokeWidth = 3f)
-                    drawLine(color = Color.White, start = Offset(centerX, centerY + 10f), end = Offset(centerX, centerY + 36f), strokeWidth = 3f)
-
-                    // Leveling horizon balance line
-                    val rollRad = Math.toRadians(roll.toDouble())
-                    val dx = kotlin.math.cos(rollRad).toFloat() * 45f
-                    val dy = kotlin.math.sin(rollRad).toFloat() * 45f
-                    drawLine(
-                        color = if (kotlin.math.abs(roll) < 5f) Color(0xFF00E676) else Color.Yellow,
-                        start = Offset(centerX - dx, centerY + dy),
-                        end = Offset(centerX + dx, centerY - dy),
-                        strokeWidth = 2.5f
-                    )
-                }
-
-                // Live AR Tape Floating Distance Badge centered under Crosshair
+                // Top-Left AR Field Measurement HUD Panel
                 Box(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(top = 90.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .weight(1f, fill = false)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(Color.Black.copy(alpha = 0.85f))
-                        .border(1.5.dp, if (boundaryPoints.isNotEmpty()) Color(0xFFFFD600) else Color(0xFF00E676), RoundedCornerShape(20.dp))
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Straighten,
-                            contentDescription = null,
-                            tint = if (boundaryPoints.isNotEmpty()) Color(0xFFFFD600) else Color(0xFF00E676),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        if (boundaryPoints.isEmpty()) {
-                            Text(
-                                text = "Point camera at 1st corner & tap 'Add Point'",
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        } else {
-                            val lastLetter = letters[(boundaryPoints.size - 1) % letters.size]
-                            val nextLetter = letters[boundaryPoints.size % letters.size]
-                            Text(
-                                text = "Live Tape ($lastLetter → $nextLetter): ${String.format("%.2f", liveDistanceMeters)} m",
-                                color = Color(0xFFFFD600),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-                    }
-                }
-
-                // 2. TRACKING UNSTABLE WARNING OVERLAY
-                if (isTrackingUnstable) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp)
-                            .align(Alignment.TopCenter)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xD9C62828))
-                            .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Tracking Lost – Move Slowly or Recalibrate",
-                                    color = Color.White,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color.White)
-                                    .clickable {
-                                        yawOffset = yaw
-                                        pitchOffset = pitch
-                                        isTrackingUnstable = false
-                                        Toast.makeText(context, "AR Sensor Recalibrated", Toast.LENGTH_SHORT).show()
-                                    }
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.RestartAlt, contentDescription = null, tint = Color(0xFFC62828), modifier = Modifier.size(12.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text("Recalibrate", color = Color(0xFFC62828), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 3. AR Field Measurement HUD Panel Overlay
-                Box(
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .align(Alignment.TopStart)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color.Black.copy(alpha = 0.85f))
-                        .border(1.dp, Color(0xFF00E676).copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                        .padding(10.dp)
+                        .border(1.dp, Color(0xFF00E676).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Column {
                         Row(
@@ -2122,20 +1723,20 @@ fun ArFieldMeasurementTapeOverlay(
                                 Box(
                                     modifier = Modifier
                                         .size(8.dp)
-                                        .clip(RoundedCornerShape(4.dp))
+                                        .clip(CircleShape)
                                         .background(if (isTrackingUnstable) Color.Red else Color(0xFF00E676))
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "AR FIELD MEASUREMENT",
+                                    text = "AR HUD",
                                     color = Color.White,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isHudExpanded) "▲ Hide" else "▼ Show",
+                                text = if (isHudExpanded) "▲" else "▼",
                                 color = Color(0xFF00E676),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
@@ -2145,40 +1746,547 @@ fun ArFieldMeasurementTapeOverlay(
                         if (isHudExpanded) {
                             Spacer(modifier = Modifier.height(6.dp))
 
-                            // List of Segment Distances (e.g. Point A → Point B: 25.60 m)
                             if (segments.isNotEmpty()) {
                                 segments.forEach { seg ->
                                     Text(
-                                        text = "Point ${seg.fromLabel} → Point ${seg.toLabel}: ${String.format("%.1f", seg.distanceMeters)} m",
+                                        text = "${seg.fromLabel} → ${seg.toLabel}: ${String.format("%.1f", seg.distanceMeters)} m",
                                         color = Color(0xFF81D4FA),
-                                        fontSize = 11.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(6.dp))
-                            } else if (boundaryPoints.isNotEmpty()) {
-                                Text(
-                                    text = "Point A saved! Move camera to next corner...",
-                                    color = Color(0xFFFFD600),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                             }
 
-                            // Totals Breakdown
-                            Column {
+                            Text(
+                                text = "Perimeter: ${String.format("%.1f", totalPerimeter)} m",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Area: ${String.format("%.2f", areaHectares)} ha",
+                                color = Color(0xFF69F0AE),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Top-Right Quick Action Badges (Points Count, Help, Fullscreen)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Points Count Badge
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.Black.copy(alpha = 0.85f))
+                            .border(1.dp, Color(0xFF00E676).copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "${boundaryPoints.size} pts",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    // Help / Guide Button
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.85f))
+                            .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                            .clickable { showQuickStartGuide = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.HelpOutline,
+                            contentDescription = "AR Guide",
+                            tint = Color(0xFF00E676),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    // Fullscreen Toggle Button
+                    if (onToggleFullScreen != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.85f))
+                                .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                                .clickable { onToggleFullScreen.invoke() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isFullScreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                contentDescription = if (isFullScreen) "Exit Fullscreen" else "Fullscreen",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // TRACKING UNSTABLE WARNING OVERLAY
+            if (isTrackingUnstable) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp)
+                        .padding(top = 52.dp)
+                        .align(Alignment.TopCenter)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xD9C62828))
+                        .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Tracking Lost – Move Slowly",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color.White)
+                                .clickable {
+                                    yawOffset = yaw
+                                    pitchOffset = pitch
+                                    isTrackingUnstable = false
+                                    Toast.makeText(context, "AR Sensor Recalibrated", Toast.LENGTH_SHORT).show()
+                                }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.RestartAlt, contentDescription = null, tint = Color(0xFFC62828), modifier = Modifier.size(12.dp))
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text("Recalibrate", color = Color(0xFFC62828), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // BOTTOM CONTROL BAR OVERLAY
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                color = Color.Black.copy(alpha = 0.88f),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+            ) {
+                if (isLandscape) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = {
+                                if (isTrackingUnstable) {
+                                    Toast.makeText(context, "Tracking Lost – Move phone slowly or tap Recalibrate first", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    onMarkPoint()
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .height(38.dp)
+                                .testTag("btn_ar_add_point"),
+                            colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 6.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
                                 Text(
-                                    text = "Total Perimeter: ${String.format("%.1f", totalPerimeter)} m",
+                                    text = if (boundaryPoints.isEmpty()) "Add Point A" else "Add Point ${letters[boundaryPoints.size % letters.size]}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        if (boundaryPoints.size >= 2) {
+                            Button(
+                                onClick = { showFinishMeasurementDialog = true },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(38.dp)
+                                    .testTag("btn_ar_finish_measurement"),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("Finish", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                }
+                            }
+                        }
+
+                        if (boundaryPoints.isNotEmpty()) {
+                            Button(
+                                onClick = onUndoPoint,
+                                modifier = Modifier
+                                    .weight(0.9f)
+                                    .height(38.dp)
+                                    .testTag("btn_ar_undo_point"),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text("Undo", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                }
+                            }
+
+                            Button(
+                                onClick = { showDeletePointDialog = true },
+                                modifier = Modifier
+                                    .weight(0.9f)
+                                    .height(38.dp)
+                                    .testTag("btn_ar_delete_point"),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00838F)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text("Delete", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                }
+                            }
+
+                            Button(
+                                onClick = onClearPoints,
+                                modifier = Modifier
+                                    .weight(0.9f)
+                                    .height(38.dp)
+                                    .testTag("btn_ar_clear_points"),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(imageVector = Icons.Default.DeleteOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text("Clear", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Button(
+                                onClick = {
+                                    if (isTrackingUnstable) {
+                                        Toast.makeText(context, "Tracking Lost – Move phone slowly or tap Recalibrate first", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        onMarkPoint()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .weight(1.4f)
+                                    .height(40.dp)
+                                    .testTag("btn_ar_add_point"),
+                                colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (boundaryPoints.isEmpty()) "Add Point A" else "Add Point ${letters[boundaryPoints.size % letters.size]}",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            if (boundaryPoints.size >= 2) {
+                                Button(
+                                    onClick = { showFinishMeasurementDialog = true },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(40.dp)
+                                        .testTag("btn_ar_finish_measurement"),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Finish", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+
+                        if (boundaryPoints.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Button(
+                                    onClick = onUndoPoint,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(34.dp)
+                                        .testTag("btn_ar_undo_point"),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text("Undo", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                    }
+                                }
+
+                                Button(
+                                    onClick = { showDeletePointDialog = true },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(34.dp)
+                                        .testTag("btn_ar_delete_point"),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00838F)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text("Delete", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                    }
+                                }
+
+                                Button(
+                                    onClick = onClearPoints,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(34.dp)
+                                        .testTag("btn_ar_clear_points"),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(imageVector = Icons.Default.DeleteOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text("Clear", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // QUICK-START OVERLAY ANIMATION GUIDE
+            if (showQuickStartGuide) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.85f))
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth(0.95f)
+                            .clip(RoundedCornerShape(20.dp))
+                            .border(1.5.dp, Color(0xFF00E676), RoundedCornerShape(20.dp))
+                            .testTag("card_ar_quickstart_guide"),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF121212))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CameraAlt,
+                                    contentDescription = null,
+                                    tint = Color(0xFF00E676),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "AR Ground Tracking Quick Start",
                                     color = Color.White,
-                                    fontSize = 11.sp,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(95.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.Black)
+                                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                    val gridWidth = size.width
+                                    val gridHeight = size.height
+                                    val lineSpacing = 24f
+                                    var x = 0f
+                                    while (x < gridWidth) {
+                                        drawLine(
+                                            color = Color(0x3000E676),
+                                            start = Offset(x, 0f),
+                                            end = Offset(x, gridHeight),
+                                            strokeWidth = 1f
+                                        )
+                                        x += lineSpacing
+                                    }
+                                    var y = 0f
+                                    while (y < gridHeight) {
+                                        drawLine(
+                                            color = Color(0x3000E676),
+                                            start = Offset(0f, y),
+                                            end = Offset(gridWidth, y),
+                                            strokeWidth = 1f
+                                        )
+                                        y += lineSpacing
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = null,
+                                        tint = Color(0xFF00E676).copy(alpha = 0.8f),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = null,
+                                        tint = Color(0xFF00E676).copy(alpha = 0.8f),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier.graphicsLayer {
+                                        translationX = phonePanOffset.dp.toPx()
+                                    }
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFF00E676),
+                                        border = BorderStroke(1.5.dp, Color.White)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Smartphone,
+                                                contentDescription = null,
+                                                tint = Color.Black,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Icon(
+                                                imageVector = Icons.Default.Straighten,
+                                                contentDescription = null,
+                                                tint = Color.Black,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = "1. Point camera towards ground surface.\n2. Slowly pan phone left & right to track points.",
+                                color = Color(0xFFE0E0E0),
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Button(
+                                onClick = { showQuickStartGuide = false },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(38.dp)
+                                    .testTag("btn_ar_quickstart_dismiss"),
+                                colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
                                 Text(
-                                    text = "Farm Area: ${String.format("%.2f", areaHectares)} hectares",
-                                    color = Color(0xFF69F0AE),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
+                                    text = "Got It – Start Measuring",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
                                 )
                             }
                         }

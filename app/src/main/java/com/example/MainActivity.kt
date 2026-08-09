@@ -115,6 +115,8 @@ fun RiceFarmAssistantApp(
     val soilRecommendation by viewModel.soilRecommendation.collectAsStateWithLifecycle()
     val activeSoilReport by viewModel.activeSoilReport.collectAsStateWithLifecycle()
     val savedSoilReports by viewModel.savedSoilReports.collectAsStateWithLifecycle()
+    val isGeminiAnalyzing by viewModel.isGeminiAnalyzing.collectAsStateWithLifecycle()
+    val geminiError by viewModel.geminiAnalysisError.collectAsStateWithLifecycle()
 
     // Booklet states
     val bookletSearchQuery by viewModel.bookletSearchQuery.collectAsStateWithLifecycle()
@@ -173,6 +175,8 @@ fun RiceFarmAssistantApp(
                     recommendation = soilRecommendation,
                     activeReport = activeSoilReport,
                     savedReports = savedSoilReports,
+                    isGeminiAnalyzing = isGeminiAnalyzing,
+                    geminiError = geminiError,
                     onCropChange = { viewModel.setSoilCrop(it) },
                     onSoilTypeChange = { viewModel.setSoilType(it) },
                     onNitrogenChange = { viewModel.setNitrogenLevel(it) },
@@ -183,6 +187,10 @@ fun RiceFarmAssistantApp(
                     onGenerateCustom = { c, t, n, p, k, om, ph, moisture ->
                         viewModel.generateSoilRecommendationWithCustomValues(c, t, n, p, k, om, ph, moisture)
                     },
+                    onAnalyzeWithGemini = { bitmap, crop, onDone ->
+                        viewModel.analyzeSoilWithGemini(bitmap, crop, onDone)
+                    },
+                    onDismissGeminiError = { viewModel.dismissGeminiError() },
                     onSaveReport = { viewModel.saveActiveSoilReport() },
                     onDeleteReport = { viewModel.deleteSoilReport(it) },
                     onSelectSavedReport = { viewModel.selectSavedSoilReport(it) },

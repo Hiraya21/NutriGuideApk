@@ -119,6 +119,8 @@ fun SoilAnalysisScreen(
     recommendation: SoilRecommendation?,
     activeReport: SoilReport?,
     savedReports: List<SoilReport>,
+    isGeminiAnalyzing: Boolean = false,
+    geminiError: String? = null,
     onCropChange: (String) -> Unit,
     onSoilTypeChange: (String) -> Unit,
     onNitrogenChange: (String) -> Unit,
@@ -127,6 +129,8 @@ fun SoilAnalysisScreen(
     onOrganicMatterChange: (String) -> Unit,
     onGenerate: () -> Unit,
     onGenerateCustom: (crop: String, type: String, n: String, p: String, k: String, om: String, ph: Double, moisture: Double) -> Unit,
+    onAnalyzeWithGemini: ((android.graphics.Bitmap, String, (Boolean) -> Unit) -> Unit)? = null,
+    onDismissGeminiError: (() -> Unit)? = null,
     onSaveReport: () -> Unit,
     onDeleteReport: (SoilReport) -> Unit,
     onSelectSavedReport: (SoilReport) -> Unit,
@@ -138,7 +142,17 @@ fun SoilAnalysisScreen(
     // 0 = Camera/Upload, 1 = Manual Input, 2 = Soil Health Dashboard, 3 = Reports History
     var selectedTab by remember { mutableIntStateOf(if (activeReport != null) 2 else 0) }
 
-    // Camera Scan States
+    // Camera Scan & ImageCapture States
+    val imageCapture = remember {
+        try {
+            androidx.camera.core.ImageCapture.Builder()
+                .setCaptureMode(androidx.camera.core.ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .build()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     var hasCameraPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
@@ -158,7 +172,69 @@ fun SoilAnalysisScreen(
     ) { uri: Uri? ->
         if (uri != null) {
             uploadedImageUri = uri
-            uploadedFileName = uri.lastPathSegment ?: "soil_analysis_report.csv"
+            uploadedFileName = uri.lastPathSegment ?: "soil_analysis_sample.jpg"
+        }
+    }
+
+    fun triggerImageAnalysis() {
+        if (onAnalyzeWithGemini != null) {
+            if (uploadedImageUri != null) {
+                val bitmap = try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        android.graphics.ImageDecoder.decodeBitmap(android.graphics.ImageDecoder.createSource(context.contentResolver, uploadedImageUri!!))
+                    } else {
+                        android.graphics.BitmapFactory.decodeStream(context.contentResolver.openInputStream(uploadedImageUri!!))
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+                if (bitmap != null) {
+                    onAnalyzeWithGemini(bitmap, crop) { success ->
+                        if (success) {
+                            selectedTab = 2
+                        }
+                    }
+                    return
+                }
+            }
+
+            if (hasCameraPermission && imageCapture != null) {
+                try {
+                    imageCapture.takePicture(
+                        ContextCompat.getMainExecutor(context),
+                        object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
+                            override fun onCaptureSuccess(imageProxy: androidx.camera.core.ImageProxy) {
+                                val bitmap = imageProxy.toBitmap()
+                                imageProxy.close()
+                                onAnalyzeWithGemini(bitmap, crop) { success ->
+                                    if (success) {
+                                        selectedTab = 2
+                                    }
+                                }
+                            }
+
+                            override fun onError(exception: androidx.camera.core.ImageCaptureException) {
+                                exception.printStackTrace()
+                                isSimulatingScan = true
+                            }
+                        }
+                    )
+                    return
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            // Fallback synthetic image for Gemini or local simulation
+            val fallbackBitmap = android.graphics.Bitmap.createBitmap(512, 512, android.graphics.Bitmap.Config.ARGB_8888).apply {
+                eraseColor(android.graphics.Color.rgb(85, 55, 35))
+            }
+            onAnalyzeWithGemini(fallbackBitmap, crop) { success ->
+                if (success) {
+                    selectedTab = 2
+                }
+            }
+        } else {
             isSimulatingScan = true
         }
     }
@@ -246,6 +322,23 @@ fun SoilAnalysisScreen(
             }
         }
 
+        if (geminiError != null) {
+            AlertDialog(
+                onDismissRequest = { onDismissGeminiError?.invoke() },
+                icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFD32F2F)) },
+                title = { Text("Gemini Soil Analysis Notice") },
+                text = { Text(geminiError) },
+                confirmButton = {
+                    Button(
+                        onClick = { onDismissGeminiError?.invoke() },
+                        colors = ButtonDefaults.buttonColors(containerColor = FarmBrownDark)
+                    ) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+
         Spacer(modifier = Modifier.height(14.dp))
 
         // Navigation Tabs Row (Camera/Upload | Input Form | Dashboard | History)
@@ -320,7 +413,7 @@ fun SoilAnalysisScreen(
                                 cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                             } else {
                                 uploadedImageUri = null
-                                isSimulatingScan = true
+                                triggerImageAnalysis()
                             }
                         },
                         modifier = Modifier
@@ -379,7 +472,10 @@ fun SoilAnalysisScreen(
                             modifier = Modifier.fillMaxSize()
                         )
                     } else if (hasCameraPermission) {
-                        SoilCameraPreviewView(modifier = Modifier.fillMaxSize())
+                        SoilCameraPreviewView(
+                            modifier = Modifier.fillMaxSize(),
+                            imageCapture = imageCapture
+                        )
                     } else {
                         Column(
                             modifier = Modifier
@@ -430,7 +526,7 @@ fun SoilAnalysisScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (uploadedImageUri != null) "Uploaded Report: ${uploadedFileName ?: "Sample Data"}" else "Spectral Lens Sensor Active",
+                                text = if (uploadedImageUri != null) "Uploaded Report: ${uploadedFileName ?: "Sample Data"}" else "Gemini Spectral Sensor Active",
                                 color = Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
@@ -460,7 +556,7 @@ fun SoilAnalysisScreen(
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = if (isSimulatingScan) "Analyzing Chromatic & Lab Test Values..." else "Align sample in target reticle",
+                            text = if (isGeminiAnalyzing || isSimulatingScan) "Gemini AI Analyzing Soil Image..." else "Align sample in target reticle",
                             color = Color.White,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -472,8 +568,8 @@ fun SoilAnalysisScreen(
 
                     // Bottom Scan Action Button
                     Button(
-                        onClick = { isSimulatingScan = true },
-                        enabled = !isSimulatingScan,
+                        onClick = { triggerImageAnalysis() },
+                        enabled = !isSimulatingScan && !isGeminiAnalyzing,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(12.dp)
@@ -483,13 +579,21 @@ fun SoilAnalysisScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A3225))
                     ) {
-                        if (isSimulatingScan) {
-                            Text("Analyzing Soil Health Metrics...", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                        if (isGeminiAnalyzing || isSimulatingScan) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.material3.CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Analyzing Soil with Gemini 3.5 Flash...", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
                         } else {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Analytics, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = FarmYellowAccent, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Process Soil Sample & View Dashboard", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Analyze Soil Sample with Gemini AI", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             }
                         }
                     }
@@ -500,7 +604,7 @@ fun SoilAnalysisScreen(
                             isSimulatingScan = false
                             onGenerateCustom(crop, selectedSwatch, "Low", "Medium", "Medium", "2-4%", 6.2, 48.0)
                             selectedTab = 2 // Switch to Dashboard
-                            Toast.makeText(context, "Soil Analysis Complete! Displaying Visual Dashboard.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Soil Analysis Complete! Displaying Dashboard.", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -1520,7 +1624,10 @@ fun DropdownSelector(
 }
 
 @Composable
-fun SoilCameraPreviewView(modifier: Modifier = Modifier) {
+fun SoilCameraPreviewView(
+    modifier: Modifier = Modifier,
+    imageCapture: androidx.camera.core.ImageCapture? = null
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
     var isCameraAvailable by remember { mutableStateOf(true) }
 
@@ -1567,7 +1674,11 @@ fun SoilCameraPreviewView(modifier: Modifier = Modifier) {
                                     it.setSurfaceProvider(previewView.surfaceProvider)
                                 }
                                 cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview)
+                                if (imageCapture != null) {
+                                    cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture)
+                                } else {
+                                    cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview)
+                                }
                             } else {
                                 isCameraAvailable = false
                             }

@@ -764,8 +764,16 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ----------------------------------------------------
-    // SOIL ANALYSIS STATE
+    // SOIL ANALYSIS & GEMINI AI STATE
     // ----------------------------------------------------
+    private val geminiSoilRepository = com.example.data.repository.GeminiSoilRepository()
+
+    private val _isGeminiAnalyzing = MutableStateFlow(false)
+    val isGeminiAnalyzing = _isGeminiAnalyzing.asStateFlow()
+
+    private val _geminiAnalysisError = MutableStateFlow<String?>(null)
+    val geminiAnalysisError = _geminiAnalysisError.asStateFlow()
+
     private val _soilCrop = MutableStateFlow("Rice")
     val soilCrop = _soilCrop.asStateFlow()
 
@@ -792,6 +800,79 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _activeSoilReport = MutableStateFlow<SoilReport?>(null)
     val activeSoilReport = _activeSoilReport.asStateFlow()
+
+    fun dismissGeminiError() {
+        _geminiAnalysisError.value = null
+    }
+
+    fun analyzeSoilWithGemini(
+        bitmap: android.graphics.Bitmap,
+        crop: String,
+        onComplete: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _isGeminiAnalyzing.value = true
+            _geminiAnalysisError.value = null
+
+            val result = geminiSoilRepository.analyzeSoilImage(bitmap, crop)
+
+            result.onSuccess { res ->
+                _soilCrop.value = crop
+                _soilType.value = res.soilType
+                _nitrogenLevel.value = res.nitrogenLevel
+                _phosphorusLevel.value = res.phosphorusLevel
+                _potassiumLevel.value = res.potassiumLevel
+
+                val omStr = if (res.organicMatterPct > 4.0) ">4%" else if (res.organicMatterPct >= 2.0) "2-4%" else "<2%"
+                _organicMatter.value = omStr
+
+                val recObj = SoilRecommendation(
+                    summary = "Gemini 3.5 Flash AI Assessment for $crop: ${res.summary}",
+                    recommendations = res.recommendations,
+                    applicationSchedule = res.applicationSchedule
+                )
+                _soilRecommendation.value = recObj
+
+                val report = SoilReport(
+                    crop = crop,
+                    soilType = res.soilType,
+                    healthScore = res.healthScore,
+                    healthStatus = res.healthStatus,
+                    nitrogenLevel = res.nitrogenLevel,
+                    nitrogenPpm = res.nitrogenPpm,
+                    phosphorusLevel = res.phosphorusLevel,
+                    phosphorusPpm = res.phosphorusPpm,
+                    potassiumLevel = res.potassiumLevel,
+                    potassiumPpm = res.potassiumPpm,
+                    phValue = res.phValue,
+                    organicMatterPct = res.organicMatterPct,
+                    moisturePct = res.moisturePct,
+                    summary = "Gemini AI Observations: ${res.visualObservations}\n\n${res.summary}",
+                    recommendations = res.recommendations,
+                    applicationSchedule = res.applicationSchedule
+                )
+
+                _activeSoilReport.value = report
+                _isGeminiAnalyzing.value = false
+                onComplete(true)
+            }.onFailure { err ->
+                _isGeminiAnalyzing.value = false
+                _geminiAnalysisError.value = err.message ?: "Gemini analysis failed"
+                // Fallback to local heuristic assessment on error so user is never blocked
+                generateSoilRecommendationWithCustomValues(
+                    crop = crop,
+                    type = _soilType.value,
+                    n = _nitrogenLevel.value,
+                    p = _phosphorusLevel.value,
+                    k = _potassiumLevel.value,
+                    om = _organicMatter.value,
+                    ph = 6.2,
+                    moisture = 48.0
+                )
+                onComplete(false)
+            }
+        }
+    }
 
     fun setSoilCrop(crop: String) { _soilCrop.value = crop }
     fun setSoilType(type: String) { _soilType.value = type }
