@@ -133,19 +133,12 @@ fun FertilizerScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Language Bar Selection
-        LanguageBar(
-            currentLanguage = currentLanguage,
-            onLanguageSelected = onLanguageSelected,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
         val titleText = when (currentLanguage) {
             AppLanguage.ENGLISH -> "Fertilizer Calculator & Matrix NPK Solver"
             AppLanguage.TAGALOG -> "Kalkulador at Matrix ng Pataba"
             AppLanguage.TAGLISH -> "Fertilizer Calculator & Matrix NPK"
             AppLanguage.ILOCANO -> "Kalkulador ti Paitaba ken Matrix NPK"
-            AppLanguage.CEBUANO -> "Kalkulador sa Abono ug Matrix NPK"
+            AppLanguage.CEBUANO -> "Kalkulador sa Abuno ug Matrix NPK"
         }
 
         Text(

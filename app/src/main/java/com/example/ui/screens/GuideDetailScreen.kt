@@ -35,15 +35,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.models.AppLanguage
 import com.example.domain.models.GuideArticle
+import com.example.domain.models.getLocalized
+import com.example.ui.components.LanguageBar
 import com.example.ui.theme.FarmBorder
 import com.example.ui.theme.FarmGreenHeader
 import com.example.ui.theme.FarmGreenPrimary
 import com.example.ui.theme.FarmTextDark
 import com.example.ui.theme.FarmTextSecondary
-
-import com.example.domain.models.AppLanguage
-import com.example.ui.components.LanguageBar
 
 @Composable
 fun GuideDetailScreen(
@@ -53,6 +53,8 @@ fun GuideDetailScreen(
     onLanguageSelected: (AppLanguage) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val localizedArticle = article.getLocalized(currentLanguage)
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -60,13 +62,6 @@ fun GuideDetailScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Language Bar
-        LanguageBar(
-            currentLanguage = currentLanguage,
-            onLanguageSelected = onLanguageSelected,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
         // Top Bar
         Row(
             modifier = Modifier
@@ -108,7 +103,7 @@ fun GuideDetailScreen(
                 // Large Book Icon
                 Icon(
                     imageVector = Icons.Default.MenuBook,
-                    contentDescription = article.title,
+                    contentDescription = localizedArticle.title,
                     tint = FarmGreenPrimary,
                     modifier = Modifier.size(36.dp)
                 )
@@ -117,7 +112,7 @@ fun GuideDetailScreen(
 
                 // Title
                 Text(
-                    text = article.title,
+                    text = localizedArticle.title,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = FarmGreenHeader
@@ -127,7 +122,7 @@ fun GuideDetailScreen(
 
                 // Summary
                 Text(
-                    text = article.summary,
+                    text = localizedArticle.summary,
                     fontSize = 14.sp,
                     color = FarmTextDark,
                     lineHeight = 22.sp
@@ -141,7 +136,7 @@ fun GuideDetailScreen(
                     AppLanguage.TAGALOG -> "← Bumalik sa lahat ng gabay"
                     AppLanguage.TAGLISH -> "← Back to all guides"
                     AppLanguage.ILOCANO -> "← Agsubli iti amin a gabay"
-                    AppLanguage.CEBUANO -> "← Balik sa tanan nga giyahan"
+                    AppLanguage.CEBUANO -> "← Balik sa tanang giya"
                 }
                 Text(
                     text = backLinkText,
@@ -159,7 +154,7 @@ fun GuideDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Detailed Sections
-                article.sections.forEach { section ->
+                localizedArticle.sections.forEach { section ->
                     Text(
                         text = section.sectionTitle,
                         fontSize = 16.sp,

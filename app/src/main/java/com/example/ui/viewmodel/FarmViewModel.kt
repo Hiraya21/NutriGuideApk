@@ -1086,7 +1086,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
                 AppLanguage.TAGALOG -> "Matagumpay na nabura ang iyong account at lahat ng data ng bukid."
                 AppLanguage.TAGLISH -> "Account and farm data deleted successfully."
                 AppLanguage.ILOCANO -> "Nainaganan ken nabura ammin a rekord ti talon."
-                AppLanguage.CEBUANO -> "Nafungkal ug nabura na ang tanang rekord sa farm."
+                AppLanguage.CEBUANO -> "Nagmalampuson ang pag-delete sa account ug tanang rekord sa yuta."
             }
             _accountDeletedMessage.value = msg
         }

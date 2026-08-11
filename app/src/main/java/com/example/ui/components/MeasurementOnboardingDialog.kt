@@ -95,7 +95,7 @@ fun MeasurementOnboardingDialog(
                         AppLanguage.TAGALOG -> "Gabay sa Pagsukat"
                         AppLanguage.TAGLISH -> "Measurement Help & Guide"
                         AppLanguage.ILOCANO -> "Giya ti Panagrukod"
-                        AppLanguage.CEBUANO -> "Giya sa Pagsukat"
+                        AppLanguage.CEBUANO -> "Giya sa Pagsukod"
                     }
                     Text(
                         text = dialogTitle,
@@ -150,7 +150,7 @@ fun MeasurementOnboardingDialog(
                                 AppLanguage.TAGALOG -> "Pagsukat gamit ang GPS"
                                 AppLanguage.TAGLISH -> "GPS Boundary Measurement"
                                 AppLanguage.ILOCANO -> "Panagrukod babaen ti GPS"
-                                AppLanguage.CEBUANO -> "Pagsukat pinaagi sa GPS"
+                                AppLanguage.CEBUANO -> "Pagsukod gamit ang GPS"
                             },
                             items = when (currentLanguage) {
                                 AppLanguage.ENGLISH -> listOf(
@@ -178,10 +178,10 @@ fun MeasurementOnboardingDialog(
                                     "Mabalin pay a i-tap ti mapa para iti tuldek."
                                 )
                                 AppLanguage.CEBUANO -> listOf(
-                                    "Pindota ang 'Start' para magsugod ang GPS tracking.",
-                                    "Baklay sa kilid sa imong humayan.",
-                                    "Pindota ang 'Mark Point' sa matag suok.",
-                                    "Mahimo sab nimo pisliton ang mapa direkta."
+                                    "Pindota ang 'Start' aron masugdan ang GPS tracking.",
+                                    "Lakaw subay sa kilid o utlanan sa imong humayan.",
+                                    "Pindota ang 'Mark Point' sa matag sulok sa yuta.",
+                                    "Makahimo ka usab sa pag-tap direkta sa mapa."
                                 )
                             }
                         )
@@ -192,7 +192,7 @@ fun MeasurementOnboardingDialog(
                                 AppLanguage.TAGALOG -> "Pagsusuri gamit ang Camera"
                                 AppLanguage.TAGLISH -> "Camera Survey Interface"
                                 AppLanguage.ILOCANO -> "Panagrukod babaen ti Kamera"
-                                AppLanguage.CEBUANO -> "Pagsukat pinaagi sa Kamera"
+                                AppLanguage.CEBUANO -> "Pagsusi gamit ang Kamera"
                             },
                             items = when (currentLanguage) {
                                 AppLanguage.ENGLISH -> listOf(
@@ -220,10 +220,10 @@ fun MeasurementOnboardingDialog(
                                     "Pinduten ti 'Finish' no nalpasen."
                                 )
                                 AppLanguage.CEBUANO -> listOf(
-                                    "Gunitan ang telepono aron makita ang camera view.",
-                                    "Kitaa ang suok sa yuta pinaagi sa kamera.",
-                                    "Tan-awa ang ihap sa puntos sa taas.",
-                                    "Pindota ang 'Finish' kon nahuman na."
+                                    "Gawaya ang telepono aron makita ang live camera view.",
+                                    "Gamita ang kamera sa pagtan-aw sa mga sulok sa yuta.",
+                                    "Bantayi ang ihap sa puntos sa ibabaw samtang naglakaw.",
+                                    "Inag-human, pindota ang 'Finish' aron ma-save ang rekord."
                                 )
                             }
                         )
@@ -250,7 +250,7 @@ fun MeasurementOnboardingDialog(
                                     AppLanguage.TAGALOG -> "Bumalik"
                                     AppLanguage.TAGLISH -> "Back"
                                     AppLanguage.ILOCANO -> "Agsubli"
-                                    AppLanguage.CEBUANO -> "Mobalik"
+                                    AppLanguage.CEBUANO -> "Balik"
                                 },
                                 fontWeight = FontWeight.Bold
                             )

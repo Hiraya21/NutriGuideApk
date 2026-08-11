@@ -292,13 +292,6 @@ fun SoilAnalysisScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Language Bar
-        LanguageBar(
-            currentLanguage = currentLanguage,
-            onLanguageSelected = onLanguageSelected,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
         // Top Back Row & Header Title
         Row(
             modifier = Modifier
@@ -314,7 +307,7 @@ fun SoilAnalysisScreen(
                 AppLanguage.TAGALOG -> "Dashboard ng Kalusugan ng Lupa"
                 AppLanguage.TAGLISH -> "Soil Health Dashboard"
                 AppLanguage.ILOCANO -> "Dashboard ti Daga"
-                AppLanguage.CEBUANO -> "Dashboard sa Kalusugan sa Yuta"
+                AppLanguage.CEBUANO -> "Dashboard sa Lupa"
             }
             Text(
                 text = screenTitle,
@@ -330,7 +323,7 @@ fun SoilAnalysisScreen(
                     .background(Color(0xFFE8F5E9))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                Text("AI Ready", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                Text("Online & Offline AI", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
             }
         }
 
@@ -359,14 +352,14 @@ fun SoilAnalysisScreen(
                         AppLanguage.TAGALOG -> "Pagsusuri sa Lupa at Kalusugan"
                         AppLanguage.TAGLISH -> "Soil Analysis & Health Dashboard"
                         AppLanguage.ILOCANO -> "Panagrukod ken Dashboard ti Daga"
-                        AppLanguage.CEBUANO -> "Pagsusi ug Dashboard sa Yuta"
+                        AppLanguage.CEBUANO -> "Pagsusi sa Yuta ug Dashboard"
                     }
                     val bannerDesc = when (currentLanguage) {
                         AppLanguage.ENGLISH -> "Upload soil test data, scan chromatic samples, or enter lab metrics to view visual soil health diagnostics."
                         AppLanguage.TAGALOG -> "Kumuha ng litrato ng lupa o ipasok ang resulta sa lab para sa pagsusuri ng kalusugan ng lupa."
                         AppLanguage.TAGLISH -> "Upload soil test data, mag-scan ng soil photo, o mag-enter ng lab metrics."
                         AppLanguage.ILOCANO -> "Mangikabil ti litrato ti daga wenno datos ti lab tapno makita ti sukat ti daga."
-                        AppLanguage.CEBUANO -> "I-upload ang litrato sa yuta o ibutang ang lab data para sa pagsusi sa yuta."
+                        AppLanguage.CEBUANO -> "I-upload ang datos sa yuta o makuha og litrato aron masusi ang katin-awan sa yuta."
                     }
                     Text(
                         text = bannerTitle,
@@ -485,14 +478,14 @@ fun SoilAnalysisScreen(
                     AppLanguage.TAGALOG -> "Litratuhan"
                     AppLanguage.TAGLISH -> "Upload/Scan"
                     AppLanguage.ILOCANO -> "Litrato"
-                    AppLanguage.CEBUANO -> "Litrato sa Yuta"
+                    AppLanguage.CEBUANO -> "Litrato/Scan"
                 }
                 val tab1Text = when (currentLanguage) {
                     AppLanguage.ENGLISH -> "Lab Input"
                     AppLanguage.TAGALOG -> "Mano-mano"
                     AppLanguage.TAGLISH -> "Lab Input"
                     AppLanguage.ILOCANO -> "Isurat"
-                    AppLanguage.CEBUANO -> "Ibutang"
+                    AppLanguage.CEBUANO -> "Lab Input"
                 }
                 val tab2Text = when (currentLanguage) {
                     AppLanguage.ENGLISH -> "Dashboard"
@@ -506,7 +499,7 @@ fun SoilAnalysisScreen(
                     AppLanguage.TAGALOG -> "Talaan (${savedReports.size})"
                     AppLanguage.TAGLISH -> "History (${savedReports.size})"
                     AppLanguage.ILOCANO -> "Nakalabas (${savedReports.size})"
-                    AppLanguage.CEBUANO -> "Agi-an (${savedReports.size})"
+                    AppLanguage.CEBUANO -> "Agi (${savedReports.size})"
                 }
 
                 // Tab 0: Upload / Scan

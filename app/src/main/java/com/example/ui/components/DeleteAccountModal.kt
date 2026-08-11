@@ -105,7 +105,7 @@ fun DeleteAccountModal(
                     AppLanguage.TAGALOG -> "Sigurado ka bang gusto mong burahin ang iyong account? Ang aksyong ito ay permanente at ganap na magbubura ng lahat ng iyong na-save na bukid, sukat, plano sa pataba, at setting."
                     AppLanguage.TAGLISH -> "Are you sure na gusto mong i-delete ang account mo? Permanently mabubura ang lahat ng saved farm records, measurement history, at preferences mo."
                     AppLanguage.ILOCANO -> "Pasingkedan a buraen ti account mo? Maintudloy a mabura ti ammin a datos ti talon ken sukat."
-                    AppLanguage.CEBUANO -> "Sigurado ka ba nga i-delete ang imong account? Maintudloy nga mapapas ang tanang datos sa farm ug sukat."
+                    AppLanguage.CEBUANO -> "Sigurado ka ba nga gusto nimong i-delete ang imong account? Permanente kini ug papasit tanang rekord sa imong yuta, sukat, ug setting."
                 }
 
                 Text(
@@ -142,7 +142,7 @@ fun DeleteAccountModal(
                             AppLanguage.TAGALOG -> "Babala: Hindi na ito mababawi kailanman."
                             AppLanguage.TAGLISH -> "Warning: This action cannot be undone."
                             AppLanguage.ILOCANO -> "Pakaammo: Saan a mabawi daytoy."
-                            AppLanguage.CEBUANO -> "Pahimangno: Dili na kini mabawi."
+                            AppLanguage.CEBUANO -> "Pahidaan: Dili na kini mabawi."
                         }
                         Text(
                             text = warningNote,
@@ -198,7 +198,7 @@ fun DeleteAccountModal(
                     AppLanguage.TAGALOG -> "Kanselahin, Panatilihin"
                     AppLanguage.TAGLISH -> "Cancel, Huwag Muna"
                     AppLanguage.ILOCANO -> "Saan, Ibagkat"
-                    AppLanguage.CEBUANO -> "Kanselahon, Ipadayon"
+                    AppLanguage.CEBUANO -> "Kanselahin, Ipanalipod"
                 }
                 Text(
                     text = cancelText,

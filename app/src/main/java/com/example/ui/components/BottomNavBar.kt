@@ -92,21 +92,21 @@ fun BottomNavBar(
                         AppLanguage.TAGALOG -> "Pataba"
                         AppLanguage.TAGLISH -> "Fertilizer"
                         AppLanguage.ILOCANO -> "Paitaba"
-                        AppLanguage.CEBUANO -> "Abono"
+                        AppLanguage.CEBUANO -> "Abuno"
                     }
                     3 -> when (currentLanguage) {
                         AppLanguage.ENGLISH -> "Booklet"
                         AppLanguage.TAGALOG -> "Gabay"
                         AppLanguage.TAGLISH -> "Booklet"
                         AppLanguage.ILOCANO -> "Libro"
-                        AppLanguage.CEBUANO -> "Giyahan"
+                        AppLanguage.CEBUANO -> "Giya"
                     }
                     else -> when (currentLanguage) {
                         AppLanguage.ENGLISH -> "History"
                         AppLanguage.TAGALOG -> "Nakaraan"
                         AppLanguage.TAGLISH -> "History"
                         AppLanguage.ILOCANO -> "Nakalabas"
-                        AppLanguage.CEBUANO -> "Agi-an"
+                        AppLanguage.CEBUANO -> "Talaan"
                     }
                 }
 

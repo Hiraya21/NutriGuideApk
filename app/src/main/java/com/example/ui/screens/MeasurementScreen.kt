@@ -142,6 +142,7 @@ import org.osmdroid.views.overlay.Polyline
 import com.example.domain.models.AppLanguage
 import com.example.domain.models.MapPoint
 import com.example.domain.models.MapUtils
+import com.example.ui.components.LanguageDropdown
 import com.example.ui.components.MeasurementOnboardingDialog
 import com.example.ui.theme.FarmBorder
 import com.example.ui.theme.FarmGreenContainer
@@ -162,6 +163,7 @@ fun MeasurementScreen(
     gpsAccuracy: String,
     currentLocation: MapPoint? = null,
     currentLanguage: AppLanguage = AppLanguage.ENGLISH,
+    onLanguageSelected: (AppLanguage) -> Unit = {},
     restoredNotice: String? = null,
     onDismissRestoredNotice: (() -> Unit)? = null,
     onLocationPermissionGranted: () -> Unit = {},
@@ -265,25 +267,28 @@ fun MeasurementScreen(
                 AppLanguage.TAGALOG -> "Sukatin ang Bukid"
                 AppLanguage.TAGLISH -> "Measure Farm Area"
                 AppLanguage.ILOCANO -> "Rukoden ti Sukat ti Talon"
-                AppLanguage.CEBUANO -> "Sukdon ang Yuta sa Humayan"
+                AppLanguage.CEBUANO -> "Sukdon ang Yuta"
             }
             Text(
                 text = titleText,
-                fontSize = 22.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = FarmTextDark
+                color = FarmTextDark,
+                modifier = Modifier.weight(1f)
             )
 
-            IconButton(
-                onClick = { showOnboardingDialog = true },
-                modifier = Modifier.testTag("btn_help_measurement")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.HelpOutline,
-                    contentDescription = "Measurement Help",
-                    tint = FarmGreenPrimary,
-                    modifier = Modifier.size(26.dp)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = { showOnboardingDialog = true },
+                    modifier = Modifier.testTag("btn_help_measurement")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.HelpOutline,
+                        contentDescription = "Measurement Help",
+                        tint = FarmGreenPrimary,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
             }
         }
 
@@ -879,7 +884,7 @@ fun MeasurementScreen(
                                     AppLanguage.TAGALOG -> "● AKTIBONG PAGSUKAT"
                                     AppLanguage.TAGLISH -> "● LIVE TRACKING ACTIVE"
                                     AppLanguage.ILOCANO -> "● NAGARAMID NGA RUKOD"
-                                    AppLanguage.CEBUANO -> "● AKTIBO ANG PAGSUKOD"
+                                    AppLanguage.CEBUANO -> "● PANTAS NGA PAGSUKOD"
                                 }
                             } else if (isPaused) {
                                 "⏸ TRACKING PAUSED"
@@ -1009,7 +1014,7 @@ fun MeasurementScreen(
                 AppLanguage.TAGALOG -> "Mga Tool sa Pagsusukat"
                 AppLanguage.TAGLISH -> "Measurement Tools"
                 AppLanguage.ILOCANO -> "Rukod nga Ramit"
-                AppLanguage.CEBUANO -> "Mga Himan sa Pagsukod"
+                AppLanguage.CEBUANO -> "Mga Gamit sa Pagsukod"
             },
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,

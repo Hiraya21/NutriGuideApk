@@ -99,13 +99,6 @@ fun HistoryScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Language Selector Bar
-        LanguageBar(
-            currentLanguage = currentLanguage,
-            onLanguageSelected = onLanguageSelected,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
         // Header
         Row(
             modifier = Modifier
@@ -119,7 +112,7 @@ fun HistoryScreen(
                 AppLanguage.TAGALOG -> "Nakaraang Tala ng Bukid"
                 AppLanguage.TAGLISH -> "Farm History & Records"
                 AppLanguage.ILOCANO -> "Nakalabas a Rekord ti Talon"
-                AppLanguage.CEBUANO -> "Agi-an sa Humayan"
+                AppLanguage.CEBUANO -> "Talaan sa Yuta"
             }
             Text(
                 text = titleText,
@@ -134,7 +127,7 @@ fun HistoryScreen(
                     AppLanguage.TAGALOG -> "Burahin Lahat"
                     AppLanguage.TAGLISH -> "Clear All"
                     AppLanguage.ILOCANO -> "Punasan Amin"
-                    AppLanguage.CEBUANO -> "Pufason Tanan"
+                    AppLanguage.CEBUANO -> "I-delete Tanan"
                 }
                 TextButton(
                     onClick = { showDeleteAllDialog = true },
@@ -163,7 +156,7 @@ fun HistoryScreen(
             AppLanguage.TAGALOG -> "Maghanap ng na-save na bukid..."
             AppLanguage.TAGLISH -> "Search ng saved farms..."
             AppLanguage.ILOCANO -> "Biroken ti naidulin a talon..."
-            AppLanguage.CEBUANO -> "Pangitaa ang na-save nga humayan..."
+            AppLanguage.CEBUANO -> "Pangitaa ang na-save nga yuta..."
         }
         OutlinedTextField(
             value = searchQuery,
@@ -216,7 +209,7 @@ fun HistoryScreen(
                         AppLanguage.TAGALOG -> "Kabuuan ng Bukid"
                         AppLanguage.TAGLISH -> "Total ng Bukid"
                         AppLanguage.ILOCANO -> "Pagsasao ti Talon"
-                        AppLanguage.CEBUANO -> "Tanan nga Humayan"
+                        AppLanguage.CEBUANO -> "Tanan nga Yuta"
                     }
                     Text(
                         text = totalFarmsLabel,
@@ -304,7 +297,7 @@ fun HistoryScreen(
                         AppLanguage.TAGALOG -> "Walang nahanap na na-save na bukid"
                         AppLanguage.TAGLISH -> "No saved farms found"
                         AppLanguage.ILOCANO -> "Awan ti naidulin a talon"
-                        AppLanguage.CEBUANO -> "Walay na-save nga humayan"
+                        AppLanguage.CEBUANO -> "Walay na-save nga yuta"
                     }
                     Text(
                         text = emptyText,
@@ -330,7 +323,7 @@ fun HistoryScreen(
                 AppLanguage.TAGALOG -> "Burahin ang Account"
                 AppLanguage.TAGLISH -> "Delete Account"
                 AppLanguage.ILOCANO -> "Pukawen ti Account"
-                AppLanguage.CEBUANO -> "Pufason ang Account"
+                AppLanguage.CEBUANO -> "I-delete ang Account"
             }
             OutlinedButton(
                 onClick = onOpenDeleteAccount,

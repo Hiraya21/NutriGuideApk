@@ -171,7 +171,7 @@ fun HomeScreen(
                         AppLanguage.TAGALOG -> "Katulong sa Bukid ng Palay"
                         AppLanguage.TAGLISH -> "Rice Farm Assistant Tool"
                         AppLanguage.ILOCANO -> "Katulong ti Talon ti Bagas"
-                        AppLanguage.CEBUANO -> "Matawag sa Humayan"
+                        AppLanguage.CEBUANO -> "Katabang sa Humayan"
                     }
 
                     Row(
@@ -218,14 +218,6 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(6.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Global Language Dropdown Toggle
-                        LanguageDropdown(
-                            currentLanguage = currentLanguage,
-                            onLanguageSelected = onLanguageSelected
-                        )
-
-                        Spacer(modifier = Modifier.width(4.dp))
-
                         // Account & Delete Account Button
                         IconButton(
                             onClick = onOpenDeleteAccount,
@@ -267,7 +259,7 @@ fun HomeScreen(
                     AppLanguage.TAGALOG -> "Sukatin, planuhin, at palaguin nang may tiwala."
                     AppLanguage.TAGLISH -> "Measure at mag-plan para sa magandang ani."
                     AppLanguage.ILOCANO -> "Sukatin, planuon, ken padakkelen ti ani."
-                    AppLanguage.CEBUANO -> "Sukdon, planohon, ug padakoon ang ani."
+                    AppLanguage.CEBUANO -> "Sukda, planoha, ug padak-a ang ani."
                 }
 
                 Text(
@@ -304,7 +296,7 @@ fun HomeScreen(
                 AppLanguage.TAGALOG -> "Ano ang gusto mong gawin?"
                 AppLanguage.TAGLISH -> "Ano ang gusto mong gawin today?"
                 AppLanguage.ILOCANO -> "Ania ti kayatmo nga aramiden?"
-                AppLanguage.CEBUANO -> "Unsay gusto nimong buhaton?"
+                AppLanguage.CEBUANO -> "Unsa ang gusto nimong buhaton?"
             }
 
             Text(
@@ -322,14 +314,14 @@ fun HomeScreen(
                 AppLanguage.TAGALOG -> "Sukatin ang Bukid"
                 AppLanguage.TAGLISH -> "Sukatin ang Farm Area"
                 AppLanguage.ILOCANO -> "Rukoden ti Talon"
-                AppLanguage.CEBUANO -> "Sukdon ang Humayan"
+                AppLanguage.CEBUANO -> "Sukat sa Yuta"
             }
             val card1Sub = when (currentLanguage) {
                 AppLanguage.ENGLISH -> "Walk the field boundary using GPS"
                 AppLanguage.TAGALOG -> "Lakaran ang gilid ng bukid gamit ang GPS"
                 AppLanguage.TAGLISH -> "Walk along the farm boundary via GPS"
                 AppLanguage.ILOCANO -> "Magnaka iti igid ti talon babaen ti GPS"
-                AppLanguage.CEBUANO -> "Baklay sa kilid sa humayan gamit ang GPS"
+                AppLanguage.CEBUANO -> "Lakaw sa utlanan sa yuta gamit ang GPS"
             }
             FeatureCard(
                 title = card1Title,
@@ -347,7 +339,7 @@ fun HomeScreen(
                 AppLanguage.TAGALOG -> "Kalkulador ng Pataba"
                 AppLanguage.TAGLISH -> "Fertilizer Calculator"
                 AppLanguage.ILOCANO -> "Kalkulador ti Paitaba"
-                AppLanguage.CEBUANO -> "Kalkulador sa Abono"
+                AppLanguage.CEBUANO -> "Kalkulador sa Abuno"
             }
             val card2Sub = when (currentLanguage) {
                 AppLanguage.ENGLISH -> "Plan bags, prices, and recommendations"
@@ -379,7 +371,7 @@ fun HomeScreen(
                 AppLanguage.TAGALOG -> "Suriin ang kailangan na NPK sa lupa"
                 AppLanguage.TAGLISH -> "Check NPK nutrient requirements"
                 AppLanguage.ILOCANO -> "Kitaen ti masapul nga NPK ti daga"
-                AppLanguage.CEBUANO -> "Tan-awa ang gikinahanglang NPK sa yuta"
+                AppLanguage.CEBUANO -> "Susiha ang gikinahanglan nga NPK sa yuta"
             }
             FeatureCard(
                 title = card3Title,
@@ -397,14 +389,14 @@ fun HomeScreen(
                 AppLanguage.TAGALOG -> "Gabay sa Pagsasaka"
                 AppLanguage.TAGLISH -> "Farming Booklet Guides"
                 AppLanguage.ILOCANO -> "Libro ti Panagtalon"
-                AppLanguage.CEBUANO -> "Giyahan sa Pag-uma"
+                AppLanguage.CEBUANO -> "Giya sa Pag-uuma"
             }
             val card4Sub = when (currentLanguage) {
                 AppLanguage.ENGLISH -> "Read practical guides and tips"
                 AppLanguage.TAGALOG -> "Magbasa ng mga gabay at payo sa palayan"
                 AppLanguage.TAGLISH -> "Read tips and practical farming guides"
                 AppLanguage.ILOCANO -> "Basaen ti payo ken giya ti panagtalon"
-                AppLanguage.CEBUANO -> "Basaha ang mga tip ug giya sa pag-uma"
+                AppLanguage.CEBUANO -> "Basaha ang mga giya ug tambag sa humayan"
             }
             FeatureCard(
                 title = card4Title,
@@ -422,14 +414,14 @@ fun HomeScreen(
                 AppLanguage.TAGALOG -> "Paalala sa Palayan"
                 AppLanguage.TAGLISH -> "Farm Reminders"
                 AppLanguage.ILOCANO -> "Pakaammo ti Talon"
-                AppLanguage.CEBUANO -> "Pahimangno sa Humayan"
+                AppLanguage.CEBUANO -> "Pahidaan sa Humayan"
             }
             val reminderSub = when (currentLanguage) {
                 AppLanguage.ENGLISH -> "Receive weather forecast and daily activity notifications"
                 AppLanguage.TAGALOG -> "Makatanggap ng paalala sa panahon at pang-araw-araw na gawain"
                 AppLanguage.TAGLISH -> "Get weather forecast and activity log reminders"
                 AppLanguage.ILOCANO -> "Makaawat ti pakaammo iti tiemani ken aramid"
-                AppLanguage.CEBUANO -> "Makadawat og pahimangno sa panahon ug buluhaton"
+                AppLanguage.CEBUANO -> "Dawata ang pahidaan sa panahon ug mga buluhaton"
             }
 
             Card(
@@ -551,14 +543,14 @@ fun HomeScreen(
                 AppLanguage.TAGALOG -> "Account at Datos"
                 AppLanguage.TAGLISH -> "Account Settings"
                 AppLanguage.ILOCANO -> "Panagurnos ti Account"
-                AppLanguage.CEBUANO -> "Mga Setting sa Account"
+                AppLanguage.CEBUANO -> "Account ug Setting"
             }
             val card5Sub = when (currentLanguage) {
                 AppLanguage.ENGLISH -> "Delete account and reset saved data"
                 AppLanguage.TAGALOG -> "Burahin ang account at burahin ang datos"
                 AppLanguage.TAGLISH -> "Delete account and clear farm records"
                 AppLanguage.ILOCANO -> "Buraen ti account ken datos ti talon"
-                AppLanguage.CEBUANO -> "I-delete ang account ug pasirahi ang datos"
+                AppLanguage.CEBUANO -> "I-delete ang account ug i-reset ang datos"
             }
             FeatureCard(
                 title = card5Title,

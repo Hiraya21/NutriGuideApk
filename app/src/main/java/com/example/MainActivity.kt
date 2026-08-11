@@ -25,6 +25,7 @@ import com.example.domain.models.GuideArticle
 import com.example.ui.components.BottomNavBar
 import com.example.ui.components.DeleteAccountModal
 import com.example.ui.components.SplashScreen
+import com.example.ui.components.TopNavBar
 import com.example.ui.screens.BookletScreen
 import com.example.ui.screens.FertilizerScreen
 import com.example.ui.screens.GuideDetailScreen
@@ -149,6 +150,15 @@ fun RiceFarmAssistantApp(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopNavBar(
+                currentTab = currentTab,
+                isSoilAnalysisOpen = isSoilAnalysisOpen,
+                isGuideDetailOpen = selectedGuide != null,
+                currentLanguage = currentLanguage,
+                onLanguageSelected = { viewModel.setLanguage(it) }
+            )
+        },
         bottomBar = {
             BottomNavBar(
                 selectedTab = currentTab,
@@ -233,6 +243,7 @@ fun RiceFarmAssistantApp(
                         gpsAccuracy = gpsAccuracy,
                         currentLocation = currentLocation,
                         currentLanguage = currentLanguage,
+                        onLanguageSelected = { viewModel.setLanguage(it) },
                         restoredNotice = restoredSessionNotice,
                         onDismissRestoredNotice = { viewModel.dismissRestoredNotice() },
                         onLocationPermissionGranted = { viewModel.onLocationPermissionGranted() },
