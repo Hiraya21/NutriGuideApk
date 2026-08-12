@@ -5,6 +5,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -174,6 +176,22 @@ fun WeatherAdvisoryCard(
                     }
                 }
 
+                // Live API Indicator Badge
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (weatherData.isLiveApi) Color(0xFFE8F5E9) else Color(0xFFFFF3E0))
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = if (weatherData.isLiveApi) "📡 LIVE" else "⚡ OFF",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (weatherData.isLiveApi) Color(0xFF2E7D32) else Color(0xFFE65100)
+                    )
+                }
+
                 IconButton(
                     onClick = onRefresh,
                     modifier = Modifier
@@ -188,7 +206,34 @@ fun WeatherAdvisoryCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Weather Condition Summary Banner
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFEFEBE9))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Live Status: ${weatherData.weatherCondition}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF4E342E)
+                )
+                Text(
+                    text = weatherData.locationName,
+                    fontSize = 11.sp,
+                    color = Color(0xFF6D4C41),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Weather Metrics Row
             Row(
@@ -229,6 +274,104 @@ fun WeatherAdvisoryCard(
                         Text("${String.format("%.0f", weatherData.windSpeedKmh)} km/h", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                     }
                     Text("Humidity ${weatherData.relativeHumidity}%", fontSize = 10.sp, color = Color.Gray)
+                }
+            }
+
+            // 5-DAY WEATHER FORECAST CARDS
+            if (weatherData.dailyForecast.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "📅 5-Day Farm Weather & Fertilizer Window:",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmGreenHeader
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    weatherData.dailyForecast.forEach { day ->
+                        val isHeavyRain = day.precipitationMm >= 20.0
+                        val isModerateRain = day.precipitationMm in 5.0..19.9
+                        val isExtremeHeat = day.maxTempC >= 35.0
+
+                        val dayBg = when {
+                            isHeavyRain -> Color(0xFFFFEBEE)
+                            isModerateRain -> Color(0xFFFFF3E0)
+                            isExtremeHeat -> Color(0xFFFFFDE7)
+                            else -> Color(0xFFF1F8E9)
+                        }
+                        val dayBorder = when {
+                            isHeavyRain -> Color(0xFFEF5350)
+                            isModerateRain -> Color(0xFFFFB74D)
+                            isExtremeHeat -> Color(0xFFFDD835)
+                            else -> Color(0xFFA5D6A7)
+                        }
+
+                        val appStatus = when {
+                            isHeavyRain -> "🔴 Delay"
+                            isModerateRain -> "🟡 Caution"
+                            isExtremeHeat -> "⚠️ Heat"
+                            else -> "🟢 Ideal"
+                        }
+
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = dayBg),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, dayBorder),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = day.dateLabel,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = day.condition,
+                                    fontSize = 10.sp,
+                                    maxLines = 1,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.DarkGray
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "${String.format("%.0f", day.maxTempC)}° / ${String.format("%.0f", day.minTempC)}°C",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF2E7D32)
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "💧 ${String.format("%.1f", day.precipitationMm)}mm (${day.rainProbPercent}%)",
+                                    fontSize = 9.sp,
+                                    color = Color(0xFF1565C0)
+                                )
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color.White)
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = appStatus,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.Black
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

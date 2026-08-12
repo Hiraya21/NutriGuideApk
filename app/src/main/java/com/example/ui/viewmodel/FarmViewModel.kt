@@ -598,6 +598,38 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         saveDraftState()
     }
 
+    fun saveCalculationToHistory() {
+        viewModelScope.launch {
+            val result = _calculationResult.value ?: return@launch
+            val dateFormat = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.US)
+            val dateStr = dateFormat.format(Date())
+
+            val itemsSummary = result.items
+                .filter { it.bagsNeeded > 0 }
+                .joinToString(", ") { "${it.bagsNeeded} sako ng ${it.name}" }
+
+            val recordName = "${_selectedCrop.value} NPK Calculation (₱${String.format("%,.0f", result.totalCost)})"
+            val jsonPoints = "[{\"lat\":15.4827,\"lng\":120.9723},{\"lat\":15.4835,\"lng\":120.9730},{\"lat\":15.4820,\"lng\":120.9735}]"
+
+            val newRecord = FarmRecord(
+                name = recordName,
+                dateFormatted = dateStr,
+                timestamp = System.currentTimeMillis(),
+                areaHectares = result.farmArea,
+                perimeterMeters = 0.0,
+                cropType = _selectedCrop.value,
+                pointsJson = jsonPoints,
+                walkedMeters = 0.0,
+                gpsAccuracy = if (itemsSummary.isNotBlank()) "Kailangan: $itemsSummary" else "NPK Matrix Solution",
+                boundaryPointsCount = result.items.size
+            )
+
+            repository.insertFarm(newRecord)
+            _calculationResult.value = null
+            _currentTab.value = 4 // Navigate directly to History tab
+        }
+    }
+
     // Auto Save & Restore Draft Helper Logic
     private fun saveDraftState() {
         try {
@@ -1126,15 +1158,18 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val currLoc = currentLocation.value
             val reg = _selectedRegion.value
-            val lat = currLoc?.lat ?: reg.lat
-            val lng = currLoc?.lng ?: reg.lng
-            val locName = if (currLoc != null && _selectedWeatherScenario.value == WeatherScenario.LIVE_GPS) "GPS Field Location (${reg.province})" else reg.name
+            val scenario = _selectedWeatherScenario.value
+
+            val isGpsMode = scenario == WeatherScenario.LIVE_GPS
+            val lat = if (isGpsMode && currLoc != null) currLoc.lat else reg.lat
+            val lng = if (isGpsMode && currLoc != null) currLoc.lng else reg.lng
+            val locName = if (isGpsMode && currLoc != null) "GPS Field Location (${reg.province})" else reg.name
 
             val data = weatherRepository.fetchWeatherForLocation(
                 lat = lat,
                 lng = lng,
                 locationName = locName,
-                scenario = _selectedWeatherScenario.value
+                scenario = scenario
             )
             _weatherData.value = data
         }

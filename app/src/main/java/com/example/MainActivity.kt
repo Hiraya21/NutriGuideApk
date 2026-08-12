@@ -282,7 +282,8 @@ fun RiceFarmAssistantApp(
                         onToggleAvailability = { id -> viewModel.toggleFertilizerAvailability(id) },
                         onUpdatePrice = { id, price -> viewModel.updateFertilizerPrice(id, price) },
                         onRunCalculation = { viewModel.runCalculation() },
-                        onDismissResult = { viewModel.clearCalculationResult() }
+                        onDismissResult = { viewModel.clearCalculationResult() },
+                        onSaveComputation = { viewModel.saveCalculationToHistory() }
                     )
                     3 -> BookletScreen(
                         searchQuery = bookletSearchQuery,

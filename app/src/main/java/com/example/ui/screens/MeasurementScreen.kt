@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -1223,15 +1224,15 @@ fun MeasurementScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Estimated Area", fontSize = 12.sp, color = FarmTextSecondary)
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Sukat ng Lupa / Area", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextSecondary)
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = String.format("%.2f", estimatedHectares),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         color = FarmGreenHeader
                     )
-                    Text("Hectares", fontSize = 12.sp, color = FarmTextDark)
+                    Text("Hectares (ha)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
                 }
 
                 Box(
@@ -2408,7 +2409,11 @@ fun ArFieldMeasurementTapeOverlay(
         if (showFinishMeasurementDialog) {
             AlertDialog(
                 onDismissRequest = { showFinishMeasurementDialog = false },
-                modifier = Modifier.testTag("dialog_finish_measurement"),
+                properties = DialogProperties(usePlatformDefaultWidth = false),
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .fillMaxHeight(0.85f)
+                    .testTag("dialog_finish_measurement"),
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Straighten,

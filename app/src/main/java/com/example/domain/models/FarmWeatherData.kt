@@ -25,6 +25,16 @@ data class FertilizerAdvisory(
     val bestApplicationWindow: String
 )
 
+data class DailyForecastDay(
+    val dateLabel: String,
+    val maxTempC: Double,
+    val minTempC: Double,
+    val precipitationMm: Double,
+    val rainProbPercent: Int,
+    val weatherCode: Int,
+    val condition: String
+)
+
 data class FarmWeatherData(
     val locationName: String = "Nueva Ecija (Rice Granary)",
     val lat: Double = 15.4827,
@@ -36,7 +46,10 @@ data class FarmWeatherData(
     val precipitationSumMm: Double = 2.5,
     val precipitationProbPercent: Int = 20,
     val windSpeedKmh: Double = 12.0,
-    val weatherCondition: String = "Partly Cloudy",
+    val weatherCondition: String = "Partly Cloudy ⛅",
+    val aqiIndex: Int = 41,
+    val dailyForecast: List<DailyForecastDay> = emptyList(),
+    val isLiveApi: Boolean = false,
     val advisory: FertilizerAdvisory = calculateFertilizerAdvisory(
         precipitationSumMm = 2.5,
         maxTempC = 33.0,

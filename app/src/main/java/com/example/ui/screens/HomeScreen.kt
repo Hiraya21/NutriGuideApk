@@ -103,6 +103,22 @@ fun HomeScreen(
 
     var pendingNotificationAction by remember { mutableStateOf<String?>(null) }
 
+    val weatherToastMsg = when (currentLanguage) {
+        AppLanguage.ENGLISH -> "Weather forecast reminder sent!"
+        AppLanguage.TAGALOG -> "Ipinadala ang paalala sa taya ng panahon!"
+        AppLanguage.TAGLISH -> "Weather forecast reminder sent!"
+        AppLanguage.ILOCANO -> "Naipatulod ti pakdaar ti panawen!"
+        AppLanguage.CEBUANO -> "Naipadala ang pahinumdom sa panahon!"
+    }
+
+    val activityToastMsg = when (currentLanguage) {
+        AppLanguage.ENGLISH -> "Daily activity reminder sent!"
+        AppLanguage.TAGALOG -> "Ipinadala ang paalala sa araw-araw na gawain!"
+        AppLanguage.TAGLISH -> "Daily activity reminder sent!"
+        AppLanguage.ILOCANO -> "Naipatulod ti pakdaar ti obra!"
+        AppLanguage.CEBUANO -> "Naipadala ang pahinumdom sa buluhaton!"
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -110,11 +126,11 @@ fun HomeScreen(
             when (pendingNotificationAction) {
                 "WEATHER" -> {
                     NotificationHelper.sendWeatherReminder(context)
-                    Toast.makeText(context, "Weather forecast reminder sent!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, weatherToastMsg, Toast.LENGTH_SHORT).show()
                 }
                 "ACTIVITY" -> {
                     NotificationHelper.sendDailyActivityReminder(context)
-                    Toast.makeText(context, "Daily activity reminder sent!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, activityToastMsg, Toast.LENGTH_SHORT).show()
                 }
             }
         } else {
@@ -128,10 +144,10 @@ fun HomeScreen(
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
                 if (action == "WEATHER") {
                     NotificationHelper.sendWeatherReminder(context)
-                    Toast.makeText(context, "Weather forecast reminder sent!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, weatherToastMsg, Toast.LENGTH_SHORT).show()
                 } else {
                     NotificationHelper.sendDailyActivityReminder(context)
-                    Toast.makeText(context, "Daily activity reminder sent!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, activityToastMsg, Toast.LENGTH_SHORT).show()
                 }
             } else {
                 pendingNotificationAction = action
@@ -140,10 +156,10 @@ fun HomeScreen(
         } else {
             if (action == "WEATHER") {
                 NotificationHelper.sendWeatherReminder(context)
-                Toast.makeText(context, "Weather forecast reminder sent!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, weatherToastMsg, Toast.LENGTH_SHORT).show()
             } else {
                 NotificationHelper.sendDailyActivityReminder(context)
-                Toast.makeText(context, "Daily activity reminder sent!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, activityToastMsg, Toast.LENGTH_SHORT).show()
             }
         }
     }

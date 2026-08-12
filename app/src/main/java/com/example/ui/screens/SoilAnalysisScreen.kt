@@ -24,7 +24,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,6 +41,9 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.CenterFocusWeak
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
@@ -172,6 +179,10 @@ fun SoilAnalysisScreen(
     var uploadedImageUri by remember { mutableStateOf<Uri?>(null) }
     var uploadedFileName by remember { mutableStateOf<String?>(null) }
 
+    // Responsive Camera Viewport & Fullscreen Camera Mode
+    var soilCameraHeightDp by remember { mutableIntStateOf(260) }
+    var isSoilCameraFullScreen by remember { mutableStateOf(false) }
+
     // Visual Loading Indicator States for Gemini API & Camera Workflow
     var scanProgress by remember { mutableFloatStateOf(0f) }
     var scanStepText by remember { mutableStateOf("Initializing Gemini AI Analysis...") }
@@ -179,21 +190,21 @@ fun SoilAnalysisScreen(
     LaunchedEffect(isGeminiAnalyzing, isSimulatingScan) {
         if (isGeminiAnalyzing || isSimulatingScan) {
             scanProgress = 0.12f
-            scanStepText = "1/3: Capturing & pre-processing soil image..."
+            scanStepText = "1/3: Kinukunan at sinusuri ang litrato ng lupa..."
             kotlinx.coroutines.delay(800)
             if (isGeminiAnalyzing || isSimulatingScan) {
                 scanProgress = 0.42f
-                scanStepText = "2/3: Analyzing spectral chroma with Gemini 3.5 Flash..."
+                scanStepText = "2/3: Sinusuri ang kulay, basang lupa, at kinakailangang pataba..."
             }
             kotlinx.coroutines.delay(1400)
             if (isGeminiAnalyzing || isSimulatingScan) {
                 scanProgress = 0.78f
-                scanStepText = "3/3: Extrapolating N-P-K nutrient values & pH level..."
+                scanStepText = "3/3: Binuo ang gabay sa N-P-K at bilang ng sako ng pataba..."
             }
             kotlinx.coroutines.delay(1400)
             if (isGeminiAnalyzing || isSimulatingScan) {
                 scanProgress = 0.95f
-                scanStepText = "3/3: Finalizing custom fertilizer plan..."
+                scanStepText = "3/3: Kumpleto na ang plano sa pagpapataba sa bukid!"
             }
         } else {
             scanProgress = 0f
@@ -620,11 +631,82 @@ fun SoilAnalysisScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
+                // RESPONSIVE CAMERA VIEWPORT SIZE CONTROLS
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = FarmBrownHeader,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Frame Size:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmTextDark
+                        )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        listOf(
+                            180 to "Small",
+                            260 to "Medium",
+                            340 to "Large",
+                            420 to "Extra"
+                        ).forEach { (sizeDp, label) ->
+                            val isSelected = soilCameraHeightDp == sizeDp
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (isSelected) FarmBrownHeader else Color(0xFFE0D7CE))
+                                    .clickable { soilCameraHeightDp = sizeDp }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 10.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else FarmTextDark
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        // Expand Fullscreen Toggle Button
+                        IconButton(
+                            onClick = { isSoilCameraFullScreen = true },
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(FarmBrownDark)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Fullscreen,
+                                contentDescription = "Fullscreen Camera",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
                 // VIEWPORT CAMERA / FILE SCAN CONTAINER
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(230.dp)
+                        .height(soilCameraHeightDp.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFF281C15))
                         .clickable {
@@ -701,6 +783,25 @@ fun SoilAnalysisScreen(
                                 fontWeight = FontWeight.Bold
                             )
                         }
+                    }
+
+                    // Top-Right Fullscreen Expand Button
+                    IconButton(
+                        onClick = { isSoilCameraFullScreen = true },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(10.dp)
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.65f))
+                            .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Fullscreen,
+                            contentDescription = "Open Fullscreen Camera",
+                            tint = FarmYellowAccent,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
 
                     // Reticle Focus Target (shown when not processing)
@@ -901,6 +1002,259 @@ fun SoilAnalysisScreen(
                                 color = FarmYellowAccent,
                                 trackColor = Color.White.copy(alpha = 0.2f)
                             )
+                        }
+                    }
+                }
+
+                // FULLSCREEN SOIL CAMERA DIALOG MODE
+                if (isSoilCameraFullScreen) {
+                    Dialog(
+                        onDismissRequest = { isSoilCameraFullScreen = false },
+                        properties = DialogProperties(
+                            usePlatformDefaultWidth = false,
+                            dismissOnBackPress = true,
+                            dismissOnClickOutside = false
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black)
+                        ) {
+                            if (uploadedImageUri != null) {
+                                AsyncImage(
+                                    model = uploadedImageUri,
+                                    contentDescription = "Uploaded Soil Data",
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else if (hasCameraPermission) {
+                                SoilCameraPreviewView(
+                                    modifier = Modifier.fillMaxSize(),
+                                    imageCapture = imageCapture
+                                )
+                            } else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CameraAlt,
+                                        contentDescription = null,
+                                        tint = Color.White.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(64.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = "Camera Permission Required",
+                                        color = Color.White,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(
+                                        onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = FarmBrownDark)
+                                    ) {
+                                        Text("Grant Camera Permission", color = Color.White)
+                                    }
+                                }
+                            }
+
+                            // Top Header Overlay bar
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(Color.Black.copy(alpha = 0.85f), Color.Transparent)
+                                        )
+                                    )
+                                    .statusBarsPadding()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(
+                                        onClick = { isSoilCameraFullScreen = false },
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .background(Color.Black.copy(alpha = 0.5f))
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.FullscreenExit,
+                                            contentDescription = "Exit Fullscreen",
+                                            tint = Color.White
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = "Gemini Soil Spectral Camera",
+                                            color = Color.White,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "Full Screen Scan & Reticle Target",
+                                            color = Color.White.copy(alpha = 0.75f),
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF2E7D32))
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Text("FULLSCREEN ACTIVE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+
+                            // Center Reticle Overlay
+                            if (!isGeminiAnalyzing && !isSimulatingScan) {
+                                Column(
+                                    modifier = Modifier.align(Alignment.Center),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(160.dp)
+                                            .clip(RoundedCornerShape(24.dp))
+                                            .background(Color.Black.copy(alpha = 0.25f))
+                                            .border(3.dp, FarmYellowAccent, RoundedCornerShape(24.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CenterFocusWeak,
+                                            contentDescription = "Center Focus Reticle",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(64.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Center soil sample inside target reticle",
+                                        color = Color.White,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+
+                            // Interactive Loading Overlay in Full Screen
+                            if (isGeminiAnalyzing || isSimulatingScan) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.88f))
+                                        .padding(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            progress = { scanProgress },
+                                            modifier = Modifier.size(72.dp),
+                                            color = FarmYellowAccent,
+                                            trackColor = Color.White.copy(alpha = 0.2f),
+                                            strokeWidth = 5.dp
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Text(
+                                            text = "${(scanProgress * 100).toInt()}% Analysed",
+                                            color = Color.White,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        LinearProgressIndicator(
+                                            progress = { scanProgress },
+                                            modifier = Modifier
+                                                .fillMaxWidth(0.85f)
+                                                .height(8.dp)
+                                                .clip(RoundedCornerShape(4.dp)),
+                                            color = FarmYellowAccent,
+                                            trackColor = Color.White.copy(alpha = 0.2f)
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Text(
+                                            text = scanStepText,
+                                            color = Color.White,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier
+                                                .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Bottom Control Bar
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f))
+                                        )
+                                    )
+                                    .align(Alignment.BottomCenter)
+                                    .navigationBarsPadding()
+                                    .padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Button(
+                                    onClick = {
+                                        isSoilCameraFullScreen = false
+                                        triggerImageAnalysis()
+                                    },
+                                    enabled = !isSimulatingScan && !isGeminiAnalyzing,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A3225))
+                                ) {
+                                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = FarmYellowAccent, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Analyze Soil Sample in Fullscreen",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                OutlinedButton(
+                                    onClick = { isSoilCameraFullScreen = false },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(44.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.6f))
+                                ) {
+                                    Icon(Icons.Default.FullscreenExit, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Exit Fullscreen Camera", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                 }
@@ -1463,7 +1817,8 @@ fun SoilHealthDashboardView(
 
                 // Nitrogen Meter
                 NutrientMeterRow(
-                    label = "Nitrogen (N)",
+                    label = "Nitrogen (N) - Dahon at Puno",
+                    subLabel = "🌱 Para sa pagpapadami ng anahaw/dahon at mabilis na paglumpon (Urea 46-0-0)",
                     level = report.nitrogenLevel,
                     ppm = "${report.nitrogenPpm} ppm",
                     fraction = if (report.nitrogenLevel == "High") 0.9f else if (report.nitrogenLevel == "Medium") 0.6f else 0.25f,
@@ -1474,7 +1829,8 @@ fun SoilHealthDashboardView(
 
                 // Phosphorus Meter
                 NutrientMeterRow(
-                    label = "Phosphorus (P)",
+                    label = "Phosphorus (P) - Ugat at Bulaklak",
+                    subLabel = "🌾 Para sa malakas na ugat at magandang bulaklak (16-20-0 / Complete 14-14-14)",
                     level = report.phosphorusLevel,
                     ppm = "${report.phosphorusPpm} ppm",
                     fraction = if (report.phosphorusLevel == "High") 0.9f else if (report.phosphorusLevel == "Medium") 0.65f else 0.3f,
@@ -1485,7 +1841,8 @@ fun SoilHealthDashboardView(
 
                 // Potassium Meter
                 NutrientMeterRow(
-                    label = "Potassium (K)",
+                    label = "Potassium (K) - Butil at Ani",
+                    subLabel = "🌾 Para sa mabigat, puno, at malusog na butil ng palay (MOP 0-0-60)",
                     level = report.potassiumLevel,
                     ppm = "${report.potassiumPpm} ppm",
                     fraction = if (report.potassiumLevel == "High") 0.95f else if (report.potassiumLevel == "Medium") 0.7f else 0.35f,
@@ -1685,45 +2042,54 @@ fun SoilHealthDashboardView(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(18.dp)) {
                 Text(
-                    text = "Field Corrective Action Plan:",
-                    fontSize = 15.sp,
+                    text = "🌱 Field Corrective Action Plan (Rekomendasyon):",
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = FarmBrownHeader
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 report.recommendations.forEach { item ->
-                    Row(modifier = Modifier.padding(vertical = 3.dp)) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             tint = FarmBrownHeader,
                             modifier = Modifier
-                                .size(16.dp)
+                                .size(20.dp)
                                 .padding(top = 2.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = item, fontSize = 12.sp, color = FarmTextDark)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = item,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = FarmTextDark
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Application Split Schedule:",
-                    fontSize = 14.sp,
+                    text = "📅 Schedule ng Pag-aabono (Split Schedule):",
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = FarmTextDark
                 )
+                Spacer(modifier = Modifier.height(6.dp))
                 report.applicationSchedule.forEach { step ->
                     Text(
                         text = "• $step",
-                        fontSize = 12.sp,
+                        fontSize = 14.sp,
                         color = FarmBrownHeader,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 3.dp)
                     )
                 }
             }
@@ -1766,6 +2132,7 @@ fun SoilHealthDashboardView(
 @Composable
 fun NutrientMeterRow(
     label: String,
+    subLabel: String? = null,
     level: String,
     ppm: String,
     fraction: Float,
@@ -1777,8 +2144,11 @@ fun NutrientMeterRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = FarmTextDark)
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
             Text("$level ($ppm)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
+        }
+        if (subLabel != null) {
+            Text(subLabel, fontSize = 10.sp, color = FarmTextSecondary, modifier = Modifier.padding(bottom = 2.dp))
         }
         Spacer(modifier = Modifier.height(4.dp))
         LinearProgressIndicator(
