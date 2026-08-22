@@ -163,75 +163,75 @@ fun FertilizerScreen(
                 .padding(16.dp)
         ) {
         val formFarmAreaLabel = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "Farm Area (hectares)"
-            AppLanguage.TAGALOG -> "Laki ng Bukid (hektarya)"
-            AppLanguage.TAGLISH -> "Farm Area (hectares)"
-            AppLanguage.ILOCANO -> "Rukod ti Talon (hektarya)"
-            AppLanguage.CEBUANO -> "Sukad sa Yuta (hektarya)"
+            AppLanguage.ENGLISH -> "1️⃣ Farm Area (Hectares)"
+            AppLanguage.TAGALOG -> "1️⃣ Sukat o Laki ng Bukid (Hektarya)"
+            AppLanguage.TAGLISH -> "1️⃣ Farm Area / Laki ng Lupa (Hectares)"
+            AppLanguage.ILOCANO -> "1️⃣ Rukod ti Talon (Hektarya)"
+            AppLanguage.CEBUANO -> "1️⃣ Sukad sa Yuta (Hektarya)"
         }
 
         val formTargetTitle = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "Target Nutrient Recommendation"
-            AppLanguage.TAGALOG -> "Target na Rekomendasyon ng Nutrisyon"
-            AppLanguage.TAGLISH -> "Target NPK Nutrient Ratio"
-            AppLanguage.ILOCANO -> "Panggep a Nutrisyon ti Paitaba"
-            AppLanguage.CEBUANO -> "Target nga Nutrisyon sa Abuno"
+            AppLanguage.ENGLISH -> "2️⃣ Target Crop Nutrient Recommendation"
+            AppLanguage.TAGALOG -> "2️⃣ Rekomendang Pataba para sa Pananim"
+            AppLanguage.TAGLISH -> "2️⃣ Target NPK Recommendation ng Pananim"
+            AppLanguage.ILOCANO -> "2️⃣ Rekomendado a Paitaba ti Mula"
+            AppLanguage.CEBUANO -> "2️⃣ Rekomendado nga Abuno sa Tanom"
         }
 
         val formManualTargetTag = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "Manual Target"
-            AppLanguage.TAGALOG -> "Mano-manong Target"
-            AppLanguage.TAGLISH -> "Manual Target"
-            AppLanguage.ILOCANO -> "Mano-mano a Target"
-            AppLanguage.CEBUANO -> "Mano-mano nga Target"
+            AppLanguage.ENGLISH -> "Custom NPK"
+            AppLanguage.TAGALOG -> "Sariling NPK"
+            AppLanguage.TAGLISH -> "Custom NPK"
+            AppLanguage.ILOCANO -> "Bukod a NPK"
+            AppLanguage.CEBUANO -> "Kaugalingong NPK"
         }
 
         val formPresetPrompt = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "Select Preset or Edit Custom Manual Target:"
-            AppLanguage.TAGALOG -> "Pumili ng Preset o Baguhin ang Target NPK:"
-            AppLanguage.TAGLISH -> "Select Preset or Edit Manual Target:"
-            AppLanguage.ILOCANO -> "Piliin ti Preset wenno Sukatan ti NPK:"
-            AppLanguage.CEBUANO -> "Pili og Preset o Bag-oha ang NPK:"
+            AppLanguage.ENGLISH -> "Select your crop preset or enter custom target:"
+            AppLanguage.TAGALOG -> "Piliin ang iyong pananim o ilagay ang sariling NPK:"
+            AppLanguage.TAGLISH -> "Piliin ang pananim o ilagay ang custom NPK:"
+            AppLanguage.ILOCANO -> "Piliem ti mula wenno isurat ti NPK:"
+            AppLanguage.CEBUANO -> "Pilia ang tanom o isulat ang NPK:"
         }
 
         val formCustomChipText = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "✏️ Custom Manual Target"
+            AppLanguage.ENGLISH -> "✏️ Custom Manual NPK"
             AppLanguage.TAGALOG -> "✏️ Sariling Target NPK"
-            AppLanguage.TAGLISH -> "✏️ Custom Manual Target"
-            AppLanguage.ILOCANO -> "✏️ Bukod a Target NPK"
-            AppLanguage.CEBUANO -> "✏️ Kaugalingong Target NPK"
+            AppLanguage.TAGLISH -> "✏️ Custom Manual NPK"
+            AppLanguage.ILOCANO -> "✏️ Bukod a NPK"
+            AppLanguage.CEBUANO -> "✏️ Kaugalingong NPK"
         }
 
         val formMaterialsTitle = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "Available Fertilizer Materials"
-            AppLanguage.TAGALOG -> "Mga Magagamit na Abono"
-            AppLanguage.TAGLISH -> "Available Fertilizer Materials"
-            AppLanguage.ILOCANO -> "Dagiti Magun-od a Paitaba"
-            AppLanguage.CEBUANO -> "Mga Magamit nga Abuno"
+            AppLanguage.ENGLISH -> "3️⃣ Available Fertilizers in the Store"
+            AppLanguage.TAGALOG -> "3️⃣ Mga Pataba na Mabibili sa Tindahan"
+            AppLanguage.TAGLISH -> "3️⃣ Mga Patabang Mabibili sa Tindahan"
+            AppLanguage.ILOCANO -> "3️⃣ Dagiti Magun-od a Paitaba iti Tindaan"
+            AppLanguage.CEBUANO -> "3️⃣ Mga Abuno nga Mapalit sa Tindahan"
         }
 
         val formSolveButtonText = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "SOLVE NPK MATRIX & COMPUTATION"
-            AppLanguage.TAGALOG -> "KALKULAHIN ANG ABONO (MATRIX SOLUTION)"
-            AppLanguage.TAGLISH -> "SOLVE FERTILIZER MATRIX COMPUTATION"
-            AppLanguage.ILOCANO -> "KALKULAHEN TI PAITABA (MATRIX)"
-            AppLanguage.CEBUANO -> "KALKULAHA ANG ABUNO (MATRIX)"
+            AppLanguage.ENGLISH -> "🚜 CALCULATE NEEDED BAGS & COST"
+            AppLanguage.TAGALOG -> "🚜 KALKULAHIN KUNG ILANG SAKO ANG KAILANGAN"
+            AppLanguage.TAGLISH -> "🚜 KALKULAHIN ANG SAKO & GASTOS"
+            AppLanguage.ILOCANO -> "🚜 KALKULAHEN TI BILANG TI SAKO"
+            AppLanguage.CEBUANO -> "🚜 KALKULAHA ANG MGA SAKO NGA PALITON"
         }
 
         val formRequiredHeaderTitle = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "Required Fertilizers (Breakdown)"
-            AppLanguage.TAGALOG -> "Mga Kailangang Abono (Fertilizers)"
-            AppLanguage.TAGLISH -> "Required Fertilizers List"
-            AppLanguage.ILOCANO -> "Dagiti Masapul a Paitaba"
-            AppLanguage.CEBUANO -> "Mga Kinahanglanon nga Abuno"
+            AppLanguage.ENGLISH -> "Kabuuan: Mga Kailangang Sako ng Pataba"
+            AppLanguage.TAGALOG -> "Kabuuan: Mga Kailangang Sako ng Pataba"
+            AppLanguage.TAGLISH -> "Kabuuan: Required Bags of Fertilizer"
+            AppLanguage.ILOCANO -> "Dagiti Masapul a Sako ti Paitaba"
+            AppLanguage.CEBUANO -> "Mga Kinahanglanon nga Sako sa Abuno"
         }
 
         val formEmptySelectionNote = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "Select one or more fertilizers above to calculate exact bag requirements."
-            AppLanguage.TAGALOG -> "Pumili ng isa o higit pang abono sa itaas upang makalkula ang eksaktong bilang ng sako."
-            AppLanguage.TAGLISH -> "Select one or more fertilizers above to calculate required bags."
-            AppLanguage.ILOCANO -> "Piliin ti maysa wenno ad-adu a paitaba tapno magun-od ti bilang ti sako."
-            AppLanguage.CEBUANO -> "Pili og usa o labaw pa nga abuno sa taas aron makalkula ang mga sako."
+            AppLanguage.ENGLISH -> "Please check (✓) one or more fertilizers above to calculate exact bag requirements."
+            AppLanguage.TAGALOG -> "Mangyaring lagyan ng tsek (✓) ang isa o higit pang pataba sa itaas upang makalkula kung ilang sako ang bibilhin."
+            AppLanguage.TAGLISH -> "Mag-check (✓) ng isa o higit pang abono sa itaas para makalkula ang mga sako."
+            AppLanguage.ILOCANO -> "I-tsek (✓) ti maysa wenno ad-adu a paitaba tapno makalkula ti bilang ti sako."
+            AppLanguage.CEBUANO -> "I-tsek (✓) ang usa o labaw pa nga abuno aron makita ang mga sako nga paliton."
         }
 
         val formPerBagUnitLabel = when (currentLanguage) {
@@ -244,80 +244,227 @@ fun FertilizerScreen(
 
         val formCostLabel = when (currentLanguage) {
             AppLanguage.ENGLISH -> "Est. Cost:"
-            AppLanguage.TAGALOG -> "Tinatayang Halaga:"
+            AppLanguage.TAGALOG -> "Halaga:"
             AppLanguage.TAGLISH -> "Est. Cost:"
-            AppLanguage.ILOCANO -> "Tinatayang Gastos:"
-            AppLanguage.CEBUANO -> "Tinatayang Halaga:"
+            AppLanguage.ILOCANO -> "Gastos:"
+            AppLanguage.CEBUANO -> "Halaga:"
         }
 
         val formSakoBadgeText = when (currentLanguage) {
             AppLanguage.ENGLISH -> "BAGS"
             AppLanguage.TAGALOG -> "SAKO"
-            AppLanguage.TAGLISH -> "SAKO / BAGS"
+            AppLanguage.TAGLISH -> "SAKO"
             AppLanguage.ILOCANO -> "SAKO"
             AppLanguage.CEBUANO -> "SAKO"
         }
 
         val titleText = when (currentLanguage) {
-            AppLanguage.ENGLISH -> "Fertilizer Calculator & Matrix NPK Solver"
-            AppLanguage.TAGALOG -> "Kalkulador at Matrix ng Pataba"
-            AppLanguage.TAGLISH -> "Fertilizer Calculator & Matrix NPK"
-            AppLanguage.ILOCANO -> "Kalkulador ti Paitaba ken Matrix NPK"
-            AppLanguage.CEBUANO -> "Kalkulador sa Abuno ug Matrix NPK"
+            AppLanguage.ENGLISH -> "🌾 Fertilizer Calculator & Bag Solver"
+            AppLanguage.TAGALOG -> "🌾 Kalkulador ng Pataba (Ilang Sako)"
+            AppLanguage.TAGLISH -> "🌾 Fertilizer & Sako Calculator"
+            AppLanguage.ILOCANO -> "🌾 Kalkulador ti Paitaba (Bilang ti Sako)"
+            AppLanguage.CEBUANO -> "🌾 Kalkulador sa Abuno (Pila ka Sako)"
         }
 
-        Text(
-            text = titleText,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = FarmTextDark,
+        val subtitleText = when (currentLanguage) {
+            AppLanguage.TAGALOG -> "Madaling alamin ang tamang bilang ng sako ng pataba at gastusin para sa iyong bukid."
+            AppLanguage.ILOCANO -> "Nalaka a maammuan ti umiso a bilang ti sako ti paitaba ken gastos iti talon."
+            AppLanguage.CEBUANO -> "Sayon mahibal-an ang eksaktong ihap sa sako sa abuno ug gasto sa imong umahan."
+            else -> "Easily calculate the exact number of fertilizer bags and estimated cost for your farm."
+        }
+
+        // Header Title & Farmer-Friendly Description
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp),
-            textAlign = TextAlign.Center
-        )
-
-        // Farm Area Input Label
-        Text(
-            text = formFarmAreaLabel,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = FarmTextDark
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-
-        OutlinedTextField(
-            value = farmArea,
-            onValueChange = onAreaChange,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            textStyle = androidx.compose.ui.text.TextStyle(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("input_farm_area"),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black,
-                focusedBorderColor = FarmGreenPrimary,
-                unfocusedBorderColor = FarmBorder
+                .padding(top = 4.dp, bottom = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = titleText,
+                fontSize = 23.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = FarmGreenHeader,
+                textAlign = TextAlign.Center
             )
-        )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = subtitleText,
+                fontSize = 13.sp,
+                color = FarmTextDark,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp
+            )
+        }
+
+        // Step Progress Helper Bar
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8F1)),
+            border = androidx.compose.foundation.BorderStroke(1.dp, FarmGreenPrimary.copy(alpha = 0.4f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "1️⃣ Laki",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmGreenHeader
+                )
+                Text(text = "➔", fontSize = 11.sp, color = FarmGreenPrimary)
+                Text(
+                    text = "2️⃣ Pananim",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmGreenHeader
+                )
+                Text(text = "➔", fontSize = 11.sp, color = FarmGreenPrimary)
+                Text(
+                    text = "3️⃣ Pataba",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmGreenHeader
+                )
+                Text(text = "➔", fontSize = 11.sp, color = FarmGreenPrimary)
+                Text(
+                    text = "4️⃣ Sako 🚜",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF1B5E20)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Farm Area Input Card / Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFCFA)),
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, FarmBorder)
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = formFarmAreaLabel,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = FarmTextDark
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(FarmGreenLight)
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "Hectares (ha)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmGreenHeader
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = farmArea,
+                    onValueChange = onAreaChange,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF1B2E1B)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_farm_area"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF1B2E1B),
+                        unfocusedTextColor = Color(0xFF1B2E1B),
+                        focusedBorderColor = FarmGreenPrimary,
+                        unfocusedBorderColor = FarmBorder,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Quick Size Chips for easy farmer selection
+                Text(
+                    text = when (currentLanguage) {
+                        AppLanguage.TAGALOG -> "Mabilis na Pili ng Sukat ng Lupa:"
+                        AppLanguage.ILOCANO -> "Alisto a Pili ti Rukod ti Daga:"
+                        AppLanguage.CEBUANO -> "Dali nga Pili sa Sukad sa Yuta:"
+                        else -> "Quick Lot Size Selection:"
+                    },
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = FarmTextSecondary
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf("0.25", "0.5", "1.0", "1.5", "2.0", "3.0", "5.0").forEach { quickSize ->
+                        val isCurr = farmArea == quickSize
+                        val label = when (quickSize) {
+                            "0.25" -> "1/4 ha"
+                            "0.5" -> "1/2 ha"
+                            "1.0" -> "1.0 ha"
+                            "2.0" -> "2.0 ha"
+                            else -> "$quickSize ha"
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isCurr) FarmGreenHeader else Color.White)
+                                .border(1.dp, if (isCurr) FarmGreenHeader else FarmBorder, RoundedCornerShape(8.dp))
+                                .clickable { onAreaChange(quickSize) }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isCurr) Color.White else FarmTextDark
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Target NPK Recommendation Section (Editable Manual Target or Preset Selector)
         val npkPresets = listOf(
-            NpkTargetPreset("Rice High Yield", "120", "40", "30"),
-            NpkTargetPreset("Rice Med Yield", "90", "30", "30"),
-            NpkTargetPreset("Corn / Maize", "120", "90", "60"),
-            NpkTargetPreset("Vegetables", "150", "60", "120"),
-            NpkTargetPreset("Root Crops", "80", "40", "120"),
-            NpkTargetPreset("Sugarcane", "160", "80", "140")
+            NpkTargetPreset("🌾 Palay High Yield", "120", "40", "30"),
+            NpkTargetPreset("🌾 Palay Med Yield", "90", "30", "30"),
+            NpkTargetPreset("🌽 Mais / Corn", "120", "90", "60"),
+            NpkTargetPreset("🥬 Gulay / Veggies", "150", "60", "120"),
+            NpkTargetPreset("🍠 Kamote / Root Crops", "80", "40", "120"),
+            NpkTargetPreset("🎋 Tubo / Sugarcane", "160", "80", "140")
         )
 
         val activePreset = npkPresets.find {
@@ -328,28 +475,31 @@ fun FertilizerScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .border(1.dp, if (isManualTarget) Color(0xFF2E7D32) else FarmBorder, RoundedCornerShape(14.dp)),
-            colors = CardDefaults.cardColors(containerColor = if (isManualTarget) Color(0xFFF1F8E9) else FarmGreenLight)
+                .clip(RoundedCornerShape(16.dp))
+                .border(1.5.dp, if (isManualTarget) Color(0xFF2E7D32) else FarmBorder, RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = if (isManualTarget) Color(0xFFF1F8E9) else Color(0xFFF6FAF6))
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Science,
+                            imageVector = Icons.Default.Spa,
                             contentDescription = null,
                             tint = FarmGreenHeader,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = formTargetTitle,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             color = FarmGreenHeader
                         )
                     }
@@ -357,41 +507,41 @@ fun FertilizerScreen(
                     // Display Tag for Active Target Mode (Manual vs Preset)
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(if (isManualTarget) Color(0xFF2E7D32) else Color(0xFF1565C0))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = if (isManualTarget) Icons.Default.Edit else Icons.Default.Tune,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = if (isManualTarget) formManualTargetTag else "Preset: ${activePreset.name}",
+                                text = if (isManualTarget) formManualTargetTag else activePreset?.name ?: "Preset",
                                 color = Color.White,
-                                fontSize = 10.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Presets Selection Bar
                 Text(
                     text = formPresetPrompt,
-                    fontSize = 11.sp,
-                    color = FarmTextSecondary,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 13.sp,
+                    color = FarmTextDark,
+                    fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
@@ -399,17 +549,17 @@ fun FertilizerScreen(
                     // Custom Manual Chip
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isManualTarget) Color(0xFF2E7D32) else FarmGreenPrimary.copy(alpha = 0.15f))
-                            .border(1.dp, if (isManualTarget) Color(0xFF2E7D32) else Color.Transparent, RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isManualTarget) Color(0xFF2E7D32) else Color.White)
+                            .border(1.5.dp, if (isManualTarget) Color(0xFF2E7D32) else FarmBorder, RoundedCornerShape(10.dp))
                             .clickable {
                                 // Keep existing manual values or focus text field
                             }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Text(
                             text = formCustomChipText,
-                            fontSize = 11.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isManualTarget) Color.White else FarmGreenHeader
                         )
@@ -419,24 +569,24 @@ fun FertilizerScreen(
                         val isSelected = activePreset?.name == preset.name
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) Color(0xFF1565C0) else FarmGreenPrimary.copy(alpha = 0.15f))
-                                .border(1.dp, if (isSelected) Color(0xFF1565C0) else Color.Transparent, RoundedCornerShape(8.dp))
-                                .clickable {
-                                    if (isManualTarget && !isSelected) {
-                                        pendingPresetToApply = preset
-                                        showResetConfirmDialog = true
-                                    } else {
-                                        onTargetNChange(preset.n)
-                                        onTargetPChange(preset.p)
-                                        onTargetKChange(preset.k)
-                                    }
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isSelected) Color(0xFF1565C0) else Color.White)
+                                .border(1.5.dp, if (isSelected) Color(0xFF1565C0) else FarmBorder, RoundedCornerShape(10.dp))
+                            .clickable {
+                                if (isManualTarget && !isSelected) {
+                                    pendingPresetToApply = preset
+                                    showResetConfirmDialog = true
+                                } else {
+                                    onTargetNChange(preset.n)
+                                    onTargetPChange(preset.p)
+                                    onTargetKChange(preset.k)
                                 }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                            }
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
                                 text = "${preset.name} (${preset.n}-${preset.p}-${preset.k})",
-                                fontSize = 11.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isSelected) Color.White else FarmGreenHeader
                             )
@@ -444,30 +594,45 @@ fun FertilizerScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Editable Input Fields for Target N, P2O5, K2O
+                // Editable Input Fields for Target N, P2O5, K2O with big, clear text
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     // N Target
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Nitrogen (N) kg/ha", fontSize = 11.sp, color = FarmTextSecondary, fontWeight = FontWeight.Medium)
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "N (Nitrogen)",
+                            fontSize = 12.sp,
+                            color = Color(0xFF1B5E20),
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Pampalago (kg/ha)",
+                            fontSize = 10.sp,
+                            color = FarmTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                         OutlinedTextField(
                             value = targetN,
                             onValueChange = onTargetNChange,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF1B2E1B),
+                                textAlign = TextAlign.Center
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("input_target_n"),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black,
+                                focusedTextColor = Color(0xFF1B2E1B),
+                                unfocusedTextColor = Color(0xFF1B2E1B),
                                 focusedBorderColor = if (isManualTarget) Color(0xFF2E7D32) else FarmGreenPrimary,
                                 unfocusedBorderColor = FarmBorder,
                                 focusedContainerColor = Color.White,
@@ -478,21 +643,36 @@ fun FertilizerScreen(
 
                     // P2O5 Target
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("P₂O₅ (P) kg/ha", fontSize = 11.sp, color = FarmTextSecondary, fontWeight = FontWeight.Medium)
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "P (Phosphorus)",
+                            fontSize = 12.sp,
+                            color = Color(0xFF0D47A1),
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Pampaugat (kg/ha)",
+                            fontSize = 10.sp,
+                            color = FarmTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                         OutlinedTextField(
                             value = targetP,
                             onValueChange = onTargetPChange,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF1B2E1B),
+                                textAlign = TextAlign.Center
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("input_target_p"),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black,
+                                focusedTextColor = Color(0xFF1B2E1B),
+                                unfocusedTextColor = Color(0xFF1B2E1B),
                                 focusedBorderColor = if (isManualTarget) Color(0xFF2E7D32) else FarmGreenPrimary,
                                 unfocusedBorderColor = FarmBorder,
                                 focusedContainerColor = Color.White,
@@ -503,21 +683,36 @@ fun FertilizerScreen(
 
                     // K2O Target
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("K₂O (K) kg/ha", fontSize = 11.sp, color = FarmTextSecondary, fontWeight = FontWeight.Medium)
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "K (Potassium)",
+                            fontSize = 12.sp,
+                            color = Color(0xFFE65100),
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Pampabigat (kg/ha)",
+                            fontSize = 10.sp,
+                            color = FarmTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                         OutlinedTextField(
                             value = targetK,
                             onValueChange = onTargetKChange,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF1B2E1B),
+                                textAlign = TextAlign.Center
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("input_target_k"),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black,
+                                focusedTextColor = Color(0xFF1B2E1B),
+                                unfocusedTextColor = Color(0xFF1B2E1B),
                                 focusedBorderColor = if (isManualTarget) Color(0xFF2E7D32) else FarmGreenPrimary,
                                 unfocusedBorderColor = FarmBorder,
                                 focusedContainerColor = Color.White,
@@ -527,9 +722,35 @@ fun FertilizerScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Farmer-Friendly N-P-K Guide Badge
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = "💡 Gabay sa N-P-K para sa Magsasaka:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF1B5E20)
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "• N (Nitrogen): Para sa mabilis na paglaki, berde at malalagong dahon\n• P (Phosphorus): Para sa matitibay na ugat at magandang pamumulaklak\n• K (Potassium): Para sa mabibigat at malalaking butil, kontra-tuyot at sakit",
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp,
+                            color = Color(0xFF2E7D32),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Summary Total Target Banner
+                // Summary Total Target Banner with big text
                 val nNum = targetN.toDoubleOrNull() ?: 0.0
                 val pNum = targetP.toDoubleOrNull() ?: 0.0
                 val kNum = targetK.toDoubleOrNull() ?: 0.0
@@ -539,23 +760,25 @@ fun FertilizerScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White.copy(alpha = 0.8f))
-                        .border(1.dp, FarmBorder, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White)
+                        .border(1.5.dp, FarmBorder, RoundedCornerShape(10.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Target NPK Ratio: $targetN - $targetP - $targetK NPK kg/ha",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = "Kabuuang NPK Ratio: $targetN - $targetP - $targetK kg/ha",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             color = FarmTextDark
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Total Field Target: ${String.format("%.1f", totalFieldNpk)} kg across ${String.format("%.2f", areaNum)} ha",
-                            fontSize = 10.sp,
+                            text = "Kabuuang kailangan sa bukid: ${String.format("%.1f", totalFieldNpk)} kg sa ${String.format("%.2f", areaNum)} ha",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = FarmTextSecondary
                         )
                     }
@@ -566,7 +789,7 @@ fun FertilizerScreen(
                                 pendingPresetToApply = null
                                 showResetConfirmDialog = true
                             },
-                            contentPadding = PaddingValues(0.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                             modifier = Modifier.testTag("btn_reset_manual_npk")
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -574,10 +797,15 @@ fun FertilizerScreen(
                                     imageVector = Icons.Default.RestartAlt,
                                     contentDescription = null,
                                     tint = Color(0xFFD32F2F),
-                                    modifier = Modifier.size(13.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text("Reset NPK", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Reset NPK",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFD32F2F)
+                                )
                             }
                         }
                     }
@@ -673,20 +901,34 @@ fun FertilizerScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Section Title: Available Fertilizers
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formMaterialsTitle,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = FarmTextDark
+                )
+                Text(
+                    text = "Lagyan ng Check (✓)",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmGreenHeader
+                )
+            }
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = formMaterialsTitle,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = FarmTextDark
-            )
-            Text(
-                text = "Edit NPK % & Price",
-                fontSize = 12.sp,
+                text = "Piliin ang mga patabang gagamitin at i-edit ang presyo bawat sako kung kailangan:",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
                 color = FarmTextSecondary
             )
         }
@@ -705,33 +947,38 @@ fun FertilizerScreen(
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // RUN CALCULATION Button
+        // RUN CALCULATION Button with large readable text
         Button(
             onClick = onRunCalculation,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp)
+                .height(56.dp)
                 .testTag("btn_run_calculation"),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = FarmGreenHeader,
                 contentColor = Color.White
             )
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Calculate,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = formSolveButtonText,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.5.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
         // FERTILIZER RECOMMENDATION DISPLAY ON THE FORM
         Card(
@@ -758,8 +1005,8 @@ fun FertilizerScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = formRequiredHeaderTitle,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             color = FarmGreenHeader
                         )
                     }
@@ -770,7 +1017,9 @@ fun FertilizerScreen(
                 if (selectedList.isEmpty()) {
                     Text(
                         text = formEmptySelectionNote,
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.Medium,
                         color = FarmTextSecondary
                     )
                 } else {
@@ -779,7 +1028,7 @@ fun FertilizerScreen(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
                             .background(FarmGreenLight)
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
                     ) {
                         val areaSummaryPrefix = when (currentLanguage) {
                             AppLanguage.ENGLISH -> "Farm Area:"
@@ -797,8 +1046,8 @@ fun FertilizerScreen(
                         }
                         Text(
                             text = "$areaSummaryPrefix ${String.format("%.2f", areaNum)} $unitLabel ($selectedCrop) | Target: $targetN-$targetP-$targetK NPK",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             color = FarmGreenHeader
                         )
                     }
@@ -813,15 +1062,15 @@ fun FertilizerScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            shape = RoundedCornerShape(12.dp),
+                                .padding(vertical = 5.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF81C784))
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF81C784))
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp),
+                                    .padding(14.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -829,44 +1078,48 @@ fun FertilizerScreen(
                                     Text(
                                         text = item.name,
                                         fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 16.sp,
+                                        fontSize = 18.sp,
                                         color = FarmTextDark
                                     )
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(3.dp))
                                     Text(
                                         text = "NPK Grade: ${item.nPercent.toInt()}-${item.pPercent.toInt()}-${item.kPercent.toInt()}",
-                                        fontSize = 13.sp,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
                                         color = FarmTextSecondary
                                     )
                                     if (item.customPrice > 0) {
+                                        Spacer(modifier = Modifier.height(2.dp))
                                         Text(
                                             text = "@ ₱${String.format("%,.0f", item.customPrice)} / $formPerBagUnitLabel  ➔  $formCostLabel $costText",
-                                            fontSize = 13.sp,
+                                            fontSize = 14.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = FarmGreenHeader
                                         )
                                     }
                                 }
 
-                                // PROMINENT BAGS BADGE
+                                Spacer(modifier = Modifier.width(10.dp))
+
+                                // PROMINENT BAGS BADGE WITH LARGE READABLE NUMBERS
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .clip(RoundedCornerShape(12.dp))
                                         .background(FarmGreenHeader)
-                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                        .padding(horizontal = 16.dp, vertical = 10.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
                                             text = "$totalBags",
-                                            fontSize = 22.sp,
+                                            fontSize = 24.sp,
                                             fontWeight = FontWeight.ExtraBold,
                                             color = Color.White
                                         )
                                         Text(
                                             text = formSakoBadgeText,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.ExtraBold,
                                             color = Color(0xFFFFD54F)
                                         )
                                     }
@@ -1558,15 +1811,24 @@ fun FertilizerItemRow(
     var pText by remember(item.pPercent) { mutableStateOf(item.pPercent.toInt().toString()) }
     var kText by remember(item.kPercent) { mutableStateOf(item.kPercent.toInt().toString()) }
 
-    Box(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
-            .border(1.dp, FarmBorder, RoundedCornerShape(12.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(
+                width = if (item.isSelected) 2.5.dp else 1.5.dp,
+                color = if (item.isSelected) FarmGreenPrimary else FarmBorder,
+                shape = RoundedCornerShape(16.dp)
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (item.isSelected) Color(0xFFF7FCF7) else Color.White
+        )
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1582,107 +1844,243 @@ fun FertilizerItemRow(
                         checked = item.isSelected,
                         onCheckedChange = { onToggle() },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = FarmGreenPrimary,
-                            uncheckedColor = Color.Gray
-                        )
+                            checkedColor = FarmGreenHeader,
+                            uncheckedColor = Color(0xFF616161)
+                        ),
+                        modifier = Modifier.size(32.dp)
                     )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Column {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = item.name,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = FarmTextDark
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (item.isSelected) FarmGreenHeader else Color(0xFF1B2E1B)
                         )
 
-                        // NPK % inputs & Stock Tag
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "N:", fontSize = 11.sp, color = FarmTextSecondary)
-                            BasicTextField(
-                                value = nText,
-                                onValueChange = {
-                                    nText = it
-                                    onNutrientsChange(it.toDoubleOrNull() ?: 0.0, pText.toDoubleOrNull() ?: 0.0, kText.toDoubleOrNull() ?: 0.0)
-                                },
-                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = FarmGreenHeader),
-                                modifier = Modifier.width(24.dp).padding(horizontal = 2.dp)
-                            )
-                            Text(text = "% | P:", fontSize = 11.sp, color = FarmTextSecondary)
-                            BasicTextField(
-                                value = pText,
-                                onValueChange = {
-                                    pText = it
-                                    onNutrientsChange(nText.toDoubleOrNull() ?: 0.0, it.toDoubleOrNull() ?: 0.0, kText.toDoubleOrNull() ?: 0.0)
-                                },
-                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = FarmGreenHeader),
-                                modifier = Modifier.width(24.dp).padding(horizontal = 2.dp)
-                            )
-                            Text(text = "% | K:", fontSize = 11.sp, color = FarmTextSecondary)
-                            BasicTextField(
-                                value = kText,
-                                onValueChange = {
-                                    kText = it
-                                    onNutrientsChange(nText.toDoubleOrNull() ?: 0.0, pText.toDoubleOrNull() ?: 0.0, it.toDoubleOrNull() ?: 0.0)
-                                },
-                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = FarmGreenHeader),
-                                modifier = Modifier.width(24.dp).padding(horizontal = 2.dp)
-                            )
-                            Text(text = "%", fontSize = 11.sp, color = FarmTextSecondary)
+                        // Farmer-friendly explanation of fertilizer function
+                        val farmerDesc = when {
+                            item.name.contains("14-14-14", ignoreCase = true) || item.name.contains("Complete", ignoreCase = true) ->
+                                "🌾 Balanseng sustansya para sa buong tanim"
+                            item.name.contains("16-20-0", ignoreCase = true) || item.name.contains("AmmoPhos", ignoreCase = true) ->
+                                "🌱 Pampalakas ng ugat, suwi at punla"
+                            item.name.contains("46-0-0", ignoreCase = true) || item.name.contains("Urea", ignoreCase = true) ->
+                                "🍃 Purong pampaberde at pampalago ng dahon"
+                            item.name.contains("0-0-60", ignoreCase = true) || item.name.contains("Potash", ignoreCase = true) ->
+                                "🛡️ Pampabigat ng butil at panlaban sa sakit"
+                            item.name.contains("21-0-0", ignoreCase = true) || item.name.contains("Sulfate", ignoreCase = true) ->
+                                "🌿 Nitrogen + Sulfur para sa masiglang kulay"
+                            item.name.contains("18-46-0", ignoreCase = true) || item.name.contains("DAP", ignoreCase = true) ->
+                                "🌱 Mataas sa Phosphorus para sa mabilis na pag-ugat"
+                            item.name.contains("0-18-0", ignoreCase = true) || item.name.contains("Solophos", ignoreCase = true) ->
+                                "🪴 Purong Phosphorus para sa pagpapatibay ng ugat"
+                            else -> "Pataba para sa sustansya ng bukid"
                         }
+
+                        Text(
+                            text = farmerDesc,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (item.isSelected) FarmGreenPrimary else Color(0xFF556B55),
+                            lineHeight = 17.sp
+                        )
                     }
                 }
 
-                // Editable Price Box
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // Editable Price Box with clear big label
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Presyo / sako",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = FarmTextDark
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .width(135.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White)
+                            .border(2.dp, FarmGreenPrimary, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "₱",
+                            fontSize = 19.sp,
+                            color = FarmGreenHeader,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            BasicTextField(
+                                value = priceText,
+                                onValueChange = { newValue ->
+                                    var cleanValue = newValue
+                                    if (priceText == "00.0" && newValue != "00.0") {
+                                        cleanValue = newValue.replace("00.0", "")
+                                    }
+                                    if (cleanValue.all { it.isDigit() || it == '.' } && cleanValue.length <= 8) {
+                                        priceText = cleanValue
+                                        val parsed = cleanValue.toDoubleOrNull() ?: 0.0
+                                        onPriceChange(parsed)
+                                    }
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                textStyle = androidx.compose.ui.text.TextStyle(
+                                    fontSize = 19.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF1B2E1B)
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("input_price_${item.id}")
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Price",
+                            tint = FarmGreenPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Large, Clear NPK Nutrient Breakdown Chips
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Nitrogen Chip
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .width(105.dp)
+                        .weight(1f)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White)
-                        .border(1.dp, FarmGreenPrimary, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 6.dp, vertical = 6.dp)
+                        .background(Color(0xFFE8F5E9))
+                        .border(1.dp, Color(0xFF81C784), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "₱",
-                        fontSize = 13.sp,
-                        color = FarmTextSecondary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(end = 2.dp)
+                        text = "N:",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF1B5E20)
                     )
-                    Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        BasicTextField(
-                            value = priceText,
-                            onValueChange = { newValue ->
-                                var cleanValue = newValue
-                                if (priceText == "00.0" && newValue != "00.0") {
-                                    cleanValue = newValue.replace("00.0", "")
-                                }
-                                if (cleanValue.all { it.isDigit() || it == '.' } && cleanValue.length <= 8) {
-                                    priceText = cleanValue
-                                    val parsed = cleanValue.toDoubleOrNull() ?: 0.0
-                                    onPriceChange(parsed)
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("input_price_${item.id}")
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Price",
-                        tint = FarmGreenPrimary,
-                        modifier = Modifier.size(12.dp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    BasicTextField(
+                        value = nText,
+                        onValueChange = {
+                            nText = it
+                            onNutrientsChange(it.toDoubleOrNull() ?: 0.0, pText.toDoubleOrNull() ?: 0.0, kText.toDoubleOrNull() ?: 0.0)
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF1B5E20),
+                            textAlign = TextAlign.Center
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "%",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1B5E20)
+                    )
+                }
+
+                // Phosphorus Chip
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFE3F2FD))
+                        .border(1.dp, Color(0xFF90CAF9), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "P:",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF0D47A1)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    BasicTextField(
+                        value = pText,
+                        onValueChange = {
+                            pText = it
+                            onNutrientsChange(nText.toDoubleOrNull() ?: 0.0, it.toDoubleOrNull() ?: 0.0, kText.toDoubleOrNull() ?: 0.0)
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF0D47A1),
+                            textAlign = TextAlign.Center
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "%",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0D47A1)
+                    )
+                }
+
+                // Potassium Chip
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFF3E0))
+                        .border(1.dp, Color(0xFFFFB74D), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "K:",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFFE65100)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    BasicTextField(
+                        value = kText,
+                        onValueChange = {
+                            kText = it
+                            onNutrientsChange(nText.toDoubleOrNull() ?: 0.0, pText.toDoubleOrNull() ?: 0.0, it.toDoubleOrNull() ?: 0.0)
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFFE65100),
+                            textAlign = TextAlign.Center
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "%",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFE65100)
                     )
                 }
             }

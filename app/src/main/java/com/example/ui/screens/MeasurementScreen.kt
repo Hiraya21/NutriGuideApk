@@ -147,11 +147,497 @@ import com.example.ui.components.LanguageDropdown
 import com.example.ui.components.MeasurementOnboardingDialog
 import com.example.ui.theme.FarmBorder
 import com.example.ui.theme.FarmGreenContainer
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.ViewCarousel
 import com.example.ui.theme.FarmGreenHeader
 import com.example.ui.theme.FarmGreenLight
 import com.example.ui.theme.FarmGreenPrimary
 import com.example.ui.theme.FarmTextDark
 import com.example.ui.theme.FarmTextSecondary
+
+enum class MeasurementMethod {
+    GPS_MAP,
+    CAMERA_AR,
+    SPLIT_VIEW
+}
+
+@Composable
+fun MeasurementMethodDialog(
+    currentMethod: MeasurementMethod,
+    currentLanguage: AppLanguage,
+    onSelectMethod: (MeasurementMethod) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var tempSelection by remember { mutableStateOf(currentMethod) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = null,
+                    tint = FarmGreenHeader,
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = when (currentLanguage) {
+                        AppLanguage.TAGALOG -> "Piliin ang Paraan ng Pagsukat"
+                        AppLanguage.ILOCANO -> "Piliem ti Wagas ti Panagrukod"
+                        AppLanguage.CEBUANO -> "Pilia ang Paagi sa Pagsukod"
+                        else -> "Select Measurement Method"
+                    },
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmTextDark
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = when (currentLanguage) {
+                        AppLanguage.TAGALOG -> "Pumili kung paano mo gustong sukatin ang iyong bukid:"
+                        AppLanguage.ILOCANO -> "Piliem no kasano ti panangrukodmo iti talonmo:"
+                        AppLanguage.CEBUANO -> "Pilia unsaon nimo pagsukod ang imong yuta:"
+                        else -> "Choose how you want to measure and survey your farm:"
+                    },
+                    fontSize = 13.sp,
+                    color = FarmTextSecondary
+                )
+
+                // Option 1: Camera AR Measurement
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(
+                            width = if (tempSelection == MeasurementMethod.CAMERA_AR) 2.5.dp else 1.dp,
+                            color = if (tempSelection == MeasurementMethod.CAMERA_AR) FarmGreenPrimary else FarmBorder,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        .clickable { tempSelection = MeasurementMethod.CAMERA_AR }
+                        .testTag("dialog_option_camera"),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (tempSelection == MeasurementMethod.CAMERA_AR) Color(0xFFE8F5E9) else Color(0xFFFAFAFA)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(if (tempSelection == MeasurementMethod.CAMERA_AR) FarmGreenHeader else Color(0xFFE0E0E0)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CameraAlt,
+                                        contentDescription = "Camera AR",
+                                        tint = if (tempSelection == MeasurementMethod.CAMERA_AR) Color.White else Color(0xFF555555),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = when (currentLanguage) {
+                                            AppLanguage.TAGALOG -> "📷 Pagsusukat gamit ang Camera (AR)"
+                                            AppLanguage.ILOCANO -> "📷 Panagrukod babaen ti Camera"
+                                            AppLanguage.CEBUANO -> "📷 Pagsukod gamit ang Camera"
+                                            else -> "📷 Camera Measurement (AR Tape)"
+                                        },
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (tempSelection == MeasurementMethod.CAMERA_AR) FarmGreenHeader else FarmTextDark
+                                    )
+                                    Text(
+                                        text = when (currentLanguage) {
+                                            AppLanguage.TAGALOG -> "Optical laser tape at visual targeting"
+                                            else -> "Optical viewfinder & visual crosshair"
+                                        },
+                                        fontSize = 12.sp,
+                                        color = FarmTextSecondary
+                                    )
+                                }
+                            }
+
+                            if (tempSelection == MeasurementMethod.CAMERA_AR) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = FarmGreenPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = when (currentLanguage) {
+                                AppLanguage.TAGALOG -> "• Itutok ang camera sa mga kanto ng bukid nang hindi kailangang lakarin ang maputik o binabahang pilapil."
+                                else -> "• Point your camera at farm corners. Mark points with digital crosshair tape without walking through muddy fields."
+                            },
+                            fontSize = 12.sp,
+                            color = FarmTextDark,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+
+                // Option 2: GPS Satellite Walking Map
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(
+                            width = if (tempSelection == MeasurementMethod.GPS_MAP) 2.5.dp else 1.dp,
+                            color = if (tempSelection == MeasurementMethod.GPS_MAP) FarmGreenPrimary else FarmBorder,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        .clickable { tempSelection = MeasurementMethod.GPS_MAP }
+                        .testTag("dialog_option_gps"),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (tempSelection == MeasurementMethod.GPS_MAP) Color(0xFFE8F5E9) else Color(0xFFFAFAFA)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(if (tempSelection == MeasurementMethod.GPS_MAP) FarmGreenHeader else Color(0xFFE0E0E0)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MyLocation,
+                                        contentDescription = "GPS Satellite",
+                                        tint = if (tempSelection == MeasurementMethod.GPS_MAP) Color.White else Color(0xFF555555),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = when (currentLanguage) {
+                                            AppLanguage.TAGALOG -> "🛰️ Pagsusukat gamit ang GPS (Lakad)"
+                                            AppLanguage.ILOCANO -> "🛰️ Panagrukod babaen ti GPS"
+                                            AppLanguage.CEBUANO -> "🛰️ Pagsukod gamit ang GPS"
+                                            else -> "🛰️ GPS Satellite Map (Walk Tracking)"
+                                        },
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (tempSelection == MeasurementMethod.GPS_MAP) FarmGreenHeader else FarmTextDark
+                                    )
+                                    Text(
+                                        text = when (currentLanguage) {
+                                            AppLanguage.TAGALOG -> "Satellite polygon at walking boundary"
+                                            else -> "Satellite polygon & walking perimeter"
+                                        },
+                                        fontSize = 12.sp,
+                                        color = FarmTextSecondary
+                                    )
+                                }
+                            }
+
+                            if (tempSelection == MeasurementMethod.GPS_MAP) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = FarmGreenPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = when (currentLanguage) {
+                                AppLanguage.TAGALOG -> "• Lakarin o sakyan ang paligid ng bukid. Awtomatikong itatala ang GPS waypoints at kalkulasyon ng ektarya."
+                                else -> "• Walk or drive along the farm boundaries. Automatically logs GPS coordinates and computes total land area."
+                            },
+                            fontSize = 12.sp,
+                            color = FarmTextDark,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+
+                // Option 3: Dual View
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(
+                            width = if (tempSelection == MeasurementMethod.SPLIT_VIEW) 2.5.dp else 1.dp,
+                            color = if (tempSelection == MeasurementMethod.SPLIT_VIEW) FarmGreenPrimary else FarmBorder,
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        .clickable { tempSelection = MeasurementMethod.SPLIT_VIEW }
+                        .testTag("dialog_option_dual"),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (tempSelection == MeasurementMethod.SPLIT_VIEW) Color(0xFFE8F5E9) else Color(0xFFFAFAFA)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(if (tempSelection == MeasurementMethod.SPLIT_VIEW) FarmGreenHeader else Color(0xFFE0E0E0)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AspectRatio,
+                                        contentDescription = "Dual View",
+                                        tint = if (tempSelection == MeasurementMethod.SPLIT_VIEW) Color.White else Color(0xFF555555),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = when (currentLanguage) {
+                                            AppLanguage.TAGALOG -> "📐 Dual View (Camera + GPS)"
+                                            else -> "📐 Dual View (Camera + GPS Map)"
+                                        },
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (tempSelection == MeasurementMethod.SPLIT_VIEW) FarmGreenHeader else FarmTextDark
+                                    )
+                                    Text(
+                                        text = "Split-screen simultaneous survey",
+                                        fontSize = 12.sp,
+                                        color = FarmTextSecondary
+                                    )
+                                }
+                            }
+
+                            if (tempSelection == MeasurementMethod.SPLIT_VIEW) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = FarmGreenPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "• View live camera AR laser tape and satellite map simultaneously on a single screen.",
+                            fontSize = 12.sp,
+                            color = FarmTextDark,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSelectMethod(tempSelection)
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.testTag("dialog_btn_apply_method")
+            ) {
+                Text(
+                    text = when (currentLanguage) {
+                        AppLanguage.TAGALOG -> "Gamitin ang Paraang Ito"
+                        AppLanguage.ILOCANO -> "Aramaten Daytoy"
+                        AppLanguage.CEBUANO -> "Gamita Kining Paagi"
+                        else -> "Apply Selection"
+                    },
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text(
+                    text = when (currentLanguage) {
+                        AppLanguage.TAGALOG -> "Kanselahin"
+                        else -> "Cancel"
+                    },
+                    color = FarmTextSecondary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        shape = RoundedCornerShape(20.dp),
+        containerColor = Color.White
+    )
+}
+
+@Composable
+fun PrimaryMethodSelectionCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    badgeText: String,
+    description: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .border(
+                width = if (isSelected) 2.5.dp else 1.dp,
+                color = if (isSelected) FarmGreenPrimary else FarmBorder,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) Color(0xFFEAF5EC) else Color.White
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) FarmGreenHeader else Color(0xFFE8ECE8)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = if (isSelected) Color.White else FarmGreenHeader,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (isSelected) FarmGreenPrimary else Color(0xFFEEEEEE)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = if (isSelected) "✓ SELECTED" else badgeText,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSelected) Color.White else FarmTextSecondary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) FarmGreenHeader else FarmTextDark,
+                maxLines = 1
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = description,
+                fontSize = 11.sp,
+                color = if (isSelected) FarmTextDark else FarmTextSecondary,
+                lineHeight = 14.sp,
+                maxLines = 2
+            )
+        }
+    }
+}
+
+@Composable
+fun MethodOptionCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (isSelected) FarmGreenHeader else Color(0xFFF9FBF9))
+            .border(
+                width = if (isSelected) 2.5.dp else 1.dp,
+                color = if (isSelected) FarmGreenPrimary else FarmBorder,
+                shape = RoundedCornerShape(14.dp)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = if (isSelected) Color.White else FarmGreenHeader,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color.White else FarmTextDark,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                fontSize = 12.sp,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (isSelected) Color.White.copy(alpha = 0.9f) else FarmTextSecondary,
+                maxLines = 1
+            )
+        }
+    }
+}
 
 @Composable
 fun MeasurementScreen(
@@ -180,6 +666,8 @@ fun MeasurementScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var selectedMethod by rememberSaveable { mutableStateOf(MeasurementMethod.GPS_MAP) }
+
     var hasCameraPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -225,9 +713,10 @@ fun MeasurementScreen(
     }
 
     var showOnboardingDialog by rememberSaveable { mutableStateOf(true) }
+    var showMethodSelectionDialog by rememberSaveable { mutableStateOf(false) }
 
-    // Adjustable Camera Size State (160dp, 220dp, 300dp, 380dp)
-    var cameraHeightDp by rememberSaveable { mutableStateOf(300) }
+    // Adjustable Camera Size State (220dp, 300dp, 380dp, 440dp)
+    var cameraHeightDp by rememberSaveable { mutableStateOf(340) }
     var isCameraFullScreen by rememberSaveable { mutableStateOf(false) }
 
     // Device-to-Device Mark Point State
@@ -245,6 +734,15 @@ fun MeasurementScreen(
         MeasurementOnboardingDialog(
             currentLanguage = currentLanguage,
             onDismiss = { showOnboardingDialog = false }
+        )
+    }
+
+    if (showMethodSelectionDialog) {
+        MeasurementMethodDialog(
+            currentMethod = selectedMethod,
+            currentLanguage = currentLanguage,
+            onSelectMethod = { selectedMethod = it },
+            onDismiss = { showMethodSelectionDialog = false }
         )
     }
 
@@ -272,22 +770,58 @@ fun MeasurementScreen(
             }
             Text(
                 text = titleText,
-                fontSize = 20.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = FarmTextDark,
                 modifier = Modifier.weight(1f)
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Method Selection Button
+                OutlinedButton(
+                    onClick = { showMethodSelectionDialog = true },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = FarmGreenLight,
+                        contentColor = FarmGreenHeader
+                    ),
+                    border = BorderStroke(1.5.dp, FarmGreenPrimary),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.testTag("btn_select_method_dialog")
+                ) {
+                    Icon(
+                        imageVector = when (selectedMethod) {
+                            MeasurementMethod.CAMERA_AR -> Icons.Default.CameraAlt
+                            MeasurementMethod.GPS_MAP -> Icons.Default.MyLocation
+                            MeasurementMethod.SPLIT_VIEW -> Icons.Default.AspectRatio
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = when (selectedMethod) {
+                            MeasurementMethod.CAMERA_AR -> "📷 Camera"
+                            MeasurementMethod.GPS_MAP -> "🛰️ GPS"
+                            MeasurementMethod.SPLIT_VIEW -> "📐 Dual"
+                        },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
                 IconButton(
                     onClick = { showOnboardingDialog = true },
-                    modifier = Modifier.testTag("btn_help_measurement")
+                    modifier = Modifier.size(44.dp).testTag("btn_help_measurement")
                 ) {
                     Icon(
                         imageVector = Icons.Default.HelpOutline,
                         contentDescription = "Measurement Help",
                         tint = FarmGreenPrimary,
-                        modifier = Modifier.size(26.dp)
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
@@ -318,19 +852,19 @@ fun MeasurementScreen(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
                             tint = Color(0xFF2E7D32),
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
                                 text = "⚡ Progress Autosaved & Restored",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 color = Color(0xFF1B5E20)
                             )
                             Text(
                                 text = restoredNotice,
-                                fontSize = 11.sp,
+                                fontSize = 13.sp,
                                 color = FarmTextDark
                             )
                         }
@@ -338,7 +872,7 @@ fun MeasurementScreen(
                     TextButton(
                         onClick = { onDismissRestoredNotice?.invoke() }
                     ) {
-                        Text("OK", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                        Text("OK", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF2E7D32))
                     }
                 }
             }
@@ -346,12 +880,17 @@ fun MeasurementScreen(
 
         // Crop Selection
         Text(
-            text = "Select Crop Type",
-            fontSize = 14.sp,
+            text = when (currentLanguage) {
+                AppLanguage.TAGALOG -> "Pumili ng Pananim"
+                AppLanguage.ILOCANO -> "Piliem ti Mula"
+                AppLanguage.CEBUANO -> "Pilia ang Tanom"
+                else -> "Select Crop Type"
+            },
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = FarmTextDark
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         val cropOptions = listOf(
             Triple("Rice", "🌾", "Rice"),
@@ -373,20 +912,20 @@ fun MeasurementScreen(
                             if (isSelected) FarmGreenPrimary else Color(0xFFF3F4F6)
                         )
                         .border(
-                            width = 1.dp,
+                            width = 1.5.dp,
                             color = if (isSelected) FarmGreenPrimary else FarmBorder,
                             shape = RoundedCornerShape(20.dp)
                         )
                         .clickable { onCropChange(cropName) }
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(horizontal = 18.dp, vertical = 10.dp)
                         .testTag("crop_chip_$cropName")
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = emoji, fontSize = 16.sp)
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = emoji, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = label,
-                            fontSize = 14.sp,
+                            fontSize = 15.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSelected) Color.White else FarmTextDark
                         )
@@ -395,464 +934,698 @@ fun MeasurementScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // ADJUSTABLE CAMERA VIEW HEADER CONTROLS
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.AspectRatio, contentDescription = null, tint = FarmGreenHeader, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Camera Frame Size", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FarmGreenHeader)
-            }
-
-            // Size Selector Chips + Fullscreen Button
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                listOf(160, 220, 300, 380).forEach { size ->
-                    val isSel = cameraHeightDp == size
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSel) FarmGreenHeader else Color(0xFFE8E8E8))
-                            .clickable { cameraHeightDp = size }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                            .testTag("cam_size_$size")
-                    ) {
-                        Text(
-                            text = "${size}dp",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSel) Color.White else FarmTextDark
-                        )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFFE8F5E9))
-                        .clickable { isCameraFullScreen = true }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                        .testTag("cam_size_full")
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Fullscreen,
-                            contentDescription = "Full Screen",
-                            tint = FarmGreenHeader,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                            text = "Full",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = FarmGreenHeader
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // Adjustable Camera View Container
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(cameraHeightDp.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1E2F23))
-        ) {
-            if (hasCameraPermission) {
-                CameraPreviewView()
-                // AR Field Point-to-Point Measuring Tape Overlay
-                ArFieldMeasurementTapeOverlay(
-                    boundaryPoints = boundaryPoints,
-                    isTracking = isTracking,
-                    walkingMeters = walkingMeters,
-                    estimatedHectares = estimatedHectares,
-                    onMarkPoint = onMarkPoint,
-                    onUndoPoint = onUndoPoint,
-                    onDeletePointAt = onDeletePointAt,
-                    onClearPoints = onClearPoints,
-                    onSaveFarm = onSaveFarm,
-                    isFullScreen = false,
-                    onToggleFullScreen = { isCameraFullScreen = true }
-                )
-            } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "Camera",
-                            tint = Color.White.copy(alpha = 0.7f),
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Camera Active Sensor",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-        }
-
-        // FULLSCREEN CAMERA DIALOG MODE
-        if (isCameraFullScreen) {
-            Dialog(
-                onDismissRequest = { isCameraFullScreen = false },
-                properties = DialogProperties(usePlatformDefaultWidth = false)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                ) {
-                    if (hasCameraPermission) {
-                        CameraPreviewView()
-                        ArFieldMeasurementTapeOverlay(
-                            boundaryPoints = boundaryPoints,
-                            isTracking = isTracking,
-                            walkingMeters = walkingMeters,
-                            estimatedHectares = estimatedHectares,
-                            onMarkPoint = onMarkPoint,
-                            onUndoPoint = onUndoPoint,
-                            onDeletePointAt = onDeletePointAt,
-                            onClearPoints = onClearPoints,
-                            onSaveFarm = onSaveFarm,
-                            isFullScreen = true,
-                            onToggleFullScreen = { isCameraFullScreen = false }
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Camera Active Sensor in Fullscreen", color = Color.White)
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        if (!hasLocationPermission) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFB74D))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOff,
-                            contentDescription = null,
-                            tint = Color(0xFFE65100),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "Allow Location Permission",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = Color(0xFFE65100)
-                            )
-                            Text(
-                                text = "Enable GPS to center map at your exact location.",
-                                fontSize = 11.sp,
-                                color = FarmTextDark
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            locationPermissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                            )
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text("Allow GPS", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-
-        // Interactive Map Component
-        FarmMapView(
-            points = boundaryPoints,
-            currentLocation = currentLocation,
-            remoteLocation = remoteDevicePoint,
-            onAddPoint = onAddPointAt,
-            onMarkCurrentGpsPoint = onMarkPoint,
-            onUndoPoint = onUndoPoint,
-            onClearPoints = onClearPoints,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(210.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .border(1.dp, FarmBorder, RoundedCornerShape(16.dp))
-        )
-
-        // RECORDED POINTS QUICK STRIP (SIMPLE POINT MANAGEMENT)
-        if (boundaryPoints.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(10.dp))
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(1.dp, FarmBorder, RoundedCornerShape(12.dp)),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA))
-            ) {
-                Column(modifier = Modifier.padding(10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(FarmGreenHeader)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Recorded Boundary Points (${boundaryPoints.size})",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = FarmGreenHeader
-                            )
-                        }
-
-                        TextButton(
-                            onClick = onClearPoints,
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text("Clear All", fontSize = 11.sp, color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(boundaryPoints.size) { index ->
-                            val pt = boundaryPoints[index]
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color.White)
-                                    .border(1.dp, FarmBorder, RoundedCornerShape(10.dp))
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(20.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(FarmGreenHeader),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("${index + 1}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "${String.format("%.4f", pt.lat)}, ${String.format("%.4f", pt.lng)}",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = FarmTextDark
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    IconButton(
-                                        onClick = { onDeletePointAt(index) },
-                                        modifier = Modifier.size(22.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Close,
-                                            contentDescription = "Delete Point ${index + 1}",
-                                            tint = Color(0xFFD32F2F),
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 2-DEVICE MARK POINT (DEVICE-TO-DEVICE COOPERATIVE MEASUREMENT)
+        // MEASUREMENT MODE / METHOD SELECTION CARD (CAMERA VS GPS SELECTION BUTTONS)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .border(1.dp, FarmBorder, RoundedCornerShape(14.dp)),
-            colors = CardDefaults.cardColors(containerColor = FarmGreenLight)
+                .clip(RoundedCornerShape(16.dp))
+                .border(1.5.dp, FarmGreenPrimary.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F8F4))
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Devices,
-                        contentDescription = null,
-                        tint = FarmGreenHeader,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "2-Device Mark Point (Large Field Mode)",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = FarmGreenHeader
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // My Device Mark Code
+            Column(modifier = Modifier.padding(14.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("My Device Mark Code:", fontSize = 11.sp, color = FarmTextSecondary)
-                        Text(myDeviceCode, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
+                        Text(
+                            text = when (currentLanguage) {
+                                AppLanguage.TAGALOG -> "Pumili ng Paraan ng Pagsukat"
+                                AppLanguage.ILOCANO -> "Piliem ti Wagas ti Panagrukod"
+                                AppLanguage.CEBUANO -> "Pilia ang Paagi sa Pagsukod"
+                                else -> "Select Measurement Method"
+                            },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmGreenHeader
+                        )
+                        Text(
+                            text = when (currentLanguage) {
+                                AppLanguage.TAGALOG -> "Camera Measurement Tool o GPS Satellite"
+                                else -> "Choose Camera Tool or GPS Satellite"
+                            },
+                            fontSize = 12.sp,
+                            color = FarmTextSecondary
+                        )
                     }
 
-                    IconButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("Device Code", myDeviceCode)
-                            clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "Copied Device Mark Code!", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.size(32.dp)
+                    // Button to open full options selection dialog
+                    Button(
+                        onClick = { showMethodSelectionDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("btn_open_method_options")
                     ) {
-                        Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Copy", tint = FarmGreenPrimary, modifier = Modifier.size(18.dp))
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = when (currentLanguage) {
+                                AppLanguage.TAGALOG -> "Gabay"
+                                AppLanguage.ILOCANO -> "Giya"
+                                AppLanguage.CEBUANO -> "Giya"
+                                else -> "Guide"
+                            },
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Primary 2 Selection Buttons: Camera Tool vs GPS Tool
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Selection Button 1: Camera Measurement Tool
+                    PrimaryMethodSelectionCard(
+                        icon = Icons.Default.CameraAlt,
+                        title = when (currentLanguage) {
+                            AppLanguage.TAGALOG -> "Camera Tool"
+                            AppLanguage.ILOCANO -> "Camera Tool"
+                            AppLanguage.CEBUANO -> "Camera Tool"
+                            else -> "Camera Tool"
+                        },
+                        badgeText = "OPTICAL AR",
+                        description = when (currentLanguage) {
+                            AppLanguage.TAGALOG -> "AR laser tape nang hindi lumalakad sa putik"
+                            else -> "Point & mark boundaries with AR laser tape"
+                        },
+                        isSelected = selectedMethod == MeasurementMethod.CAMERA_AR,
+                        onClick = { selectedMethod = MeasurementMethod.CAMERA_AR },
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("btn_select_camera_tool")
+                    )
+
+                    // Selection Button 2: GPS Measurement Tool
+                    PrimaryMethodSelectionCard(
+                        icon = Icons.Default.MyLocation,
+                        title = when (currentLanguage) {
+                            AppLanguage.TAGALOG -> "GPS Satellite"
+                            AppLanguage.ILOCANO -> "GPS Satellite"
+                            AppLanguage.CEBUANO -> "GPS Satellite"
+                            else -> "GPS Tool"
+                        },
+                        badgeText = "SATELLITE",
+                        description = when (currentLanguage) {
+                            AppLanguage.TAGALOG -> "Lakarin ang pilapil gamit ang satellite GPS"
+                            else -> "Walk or drive perimeter with live GPS tracking"
+                        },
+                        isSelected = selectedMethod == MeasurementMethod.GPS_MAP,
+                        onClick = { selectedMethod = MeasurementMethod.GPS_MAP },
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("btn_select_gps_tool")
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Connect Second Device Code Input
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Dual / Split view toggle pill
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (selectedMethod == MeasurementMethod.SPLIT_VIEW) FarmGreenHeader else Color(0xFFEFEFEF))
+                        .clickable { selectedMethod = MeasurementMethod.SPLIT_VIEW }
+                        .padding(vertical = 8.dp, horizontal = 12.dp)
+                        .testTag("btn_select_dual_view"),
+                    contentAlignment = Alignment.Center
                 ) {
-                    OutlinedTextField(
-                        value = secondDeviceCodeInput,
-                        onValueChange = { secondDeviceCodeInput = it },
-                        placeholder = { Text("Paste Device B Code (e.g. MP-15.48-120.97)", fontSize = 11.sp) },
-                        singleLine = true,
-                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black),
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("input_device_b_code"),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black,
-                            focusedBorderColor = FarmGreenPrimary,
-                            unfocusedBorderColor = FarmBorder
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AspectRatio,
+                            contentDescription = "Dual View",
+                            tint = if (selectedMethod == MeasurementMethod.SPLIT_VIEW) Color.White else FarmGreenHeader,
+                            modifier = Modifier.size(16.dp)
                         )
-                    )
-
-                    Button(
-                        onClick = {
-                            if (secondDeviceCodeInput.startsWith("MP-")) {
-                                val parts = secondDeviceCodeInput.removePrefix("MP-").split("-")
-                                if (parts.size >= 2) {
-                                    val rLat = parts[0].toDoubleOrNull()
-                                    val rLng = parts[1].toDoubleOrNull()
-                                    if (rLat != null && rLng != null) {
-                                        val remotePt = MapPoint(rLat, rLng)
-                                        remoteDevicePoint = remotePt
-                                        onAddPointAt(rLat, rLng)
-
-                                        val myPt = currentLocation ?: MapPoint(15.4827, 120.9723)
-                                        interDeviceDistanceMeters = MapUtils.calculateDistanceMeters(myPt, remotePt)
-                                        Toast.makeText(context, "Connected Device B! Inter-device baseline added.", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            } else {
-                                Toast.makeText(context, "Invalid Device Code format. Use MP-lat-lng", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader)
-                    ) {
-                        Text("Link B", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = when (currentLanguage) {
+                                AppLanguage.TAGALOG -> "📐 Dual Mode (Camera AR + GPS Sabay)"
+                                else -> "📐 Dual Mode (Camera AR + GPS Satellite Together)"
+                            },
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedMethod == MeasurementMethod.SPLIT_VIEW) Color.White else FarmTextDark
+                        )
                     }
-                }
-
-                interDeviceDistanceMeters?.let { dist ->
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Device A ↔ Device B Distance: ${String.format("%.1f", dist)} meters",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = FarmGreenPrimary
-                    )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // CAMERA VIEW SECTION (Shown in CAMERA_AR or SPLIT_VIEW mode)
+        if (selectedMethod == MeasurementMethod.CAMERA_AR || selectedMethod == MeasurementMethod.SPLIT_VIEW) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.CameraAlt, contentDescription = null, tint = FarmGreenHeader, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Camera AR View",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = FarmGreenHeader
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Quick Switch to GPS Button
+                    if (selectedMethod == MeasurementMethod.CAMERA_AR) {
+                        OutlinedButton(
+                            onClick = { selectedMethod = MeasurementMethod.GPS_MAP },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, FarmGreenPrimary),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.testTag("btn_quick_switch_to_gps")
+                        ) {
+                            Icon(Icons.Default.MyLocation, contentDescription = null, tint = FarmGreenHeader, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Use GPS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = FarmGreenHeader)
+                        }
+                    }
+
+                    // Size Selector Chips + Fullscreen Button
+                    listOf(240, 340, 440).forEach { size ->
+                        val isSel = cameraHeightDp == size
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSel) FarmGreenHeader else Color(0xFFE8E8E8))
+                                .clickable { cameraHeightDp = size }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                .testTag("cam_size_$size")
+                        ) {
+                            Text(
+                                text = "${size}dp",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSel) Color.White else FarmTextDark
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFE8F5E9))
+                            .clickable { isCameraFullScreen = true }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .testTag("cam_size_full")
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Fullscreen,
+                                contentDescription = "Full Screen",
+                                tint = FarmGreenHeader,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "Full",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = FarmGreenHeader
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Adjustable Camera View Container
+            val currentCamHeight = if (selectedMethod == MeasurementMethod.SPLIT_VIEW) 240 else cameraHeightDp
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(currentCamHeight.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF1E2F23))
+            ) {
+                if (hasCameraPermission) {
+                    CameraPreviewView()
+                    // AR Field Point-to-Point Measuring Tape Overlay
+                    ArFieldMeasurementTapeOverlay(
+                        boundaryPoints = boundaryPoints,
+                        isTracking = isTracking,
+                        walkingMeters = walkingMeters,
+                        estimatedHectares = estimatedHectares,
+                        onMarkPoint = onMarkPoint,
+                        onUndoPoint = onUndoPoint,
+                        onDeletePointAt = onDeletePointAt,
+                        onClearPoints = onClearPoints,
+                        onSaveFarm = onSaveFarm,
+                        isFullScreen = false,
+                        onToggleFullScreen = { isCameraFullScreen = true }
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = "Camera",
+                                tint = Color.White.copy(alpha = 0.7f),
+                                modifier = Modifier.size(44.dp)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Camera Permission Required",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = { cameraLauncher.launch(Manifest.permission.CAMERA) },
+                                colors = ButtonDefaults.buttonColors(containerColor = FarmGreenPrimary)
+                            ) {
+                                Text("Enable Camera", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // FULLSCREEN CAMERA DIALOG MODE
+            if (isCameraFullScreen) {
+                Dialog(
+                    onDismissRequest = { isCameraFullScreen = false },
+                    properties = DialogProperties(usePlatformDefaultWidth = false)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black)
+                    ) {
+                        if (hasCameraPermission) {
+                            CameraPreviewView()
+                            ArFieldMeasurementTapeOverlay(
+                                boundaryPoints = boundaryPoints,
+                                isTracking = isTracking,
+                                walkingMeters = walkingMeters,
+                                estimatedHectares = estimatedHectares,
+                                onMarkPoint = onMarkPoint,
+                                onUndoPoint = onUndoPoint,
+                                onDeletePointAt = onDeletePointAt,
+                                onClearPoints = onClearPoints,
+                                onSaveFarm = onSaveFarm,
+                                isFullScreen = true,
+                                onToggleFullScreen = { isCameraFullScreen = false }
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Camera Active Sensor in Fullscreen", color = Color.White, fontSize = 16.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+
+        // GPS MAP SECTION (Shown in GPS_MAP or SPLIT_VIEW mode)
+        if (selectedMethod == MeasurementMethod.GPS_MAP || selectedMethod == MeasurementMethod.SPLIT_VIEW) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.MyLocation,
+                        contentDescription = null,
+                        tint = FarmGreenHeader,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "GPS Satellite Map",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = FarmGreenHeader
+                    )
+                }
+
+                if (selectedMethod == MeasurementMethod.GPS_MAP) {
+                    OutlinedButton(
+                        onClick = { selectedMethod = MeasurementMethod.CAMERA_AR },
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, FarmGreenPrimary),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.testTag("btn_quick_switch_to_camera")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = FarmGreenHeader,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Use Camera",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmGreenHeader
+                        )
+                    }
+                }
+            }
+
+            if (!hasLocationPermission) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 10.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFB74D))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOff,
+                                contentDescription = null,
+                                tint = Color(0xFFE65100),
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Allow Location Permission",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = Color(0xFFE65100)
+                                )
+                                Text(
+                                    text = "Enable GPS to center map at your exact location.",
+                                    fontSize = 13.sp,
+                                    color = FarmTextDark
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                locationPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
+                                )
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text("Allow GPS", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Interactive Map Component
+            val mapHeight = if (selectedMethod == MeasurementMethod.GPS_MAP) 320.dp else 220.dp
+            FarmMapView(
+                points = boundaryPoints,
+                currentLocation = currentLocation,
+                remoteLocation = remoteDevicePoint,
+                onAddPoint = onAddPointAt,
+                onMarkCurrentGpsPoint = onMarkPoint,
+                onUndoPoint = onUndoPoint,
+                onClearPoints = onClearPoints,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(mapHeight)
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.5.dp, FarmBorder, RoundedCornerShape(16.dp))
+            )
+
+            // RECORDED POINTS QUICK STRIP (SIMPLE POINT MANAGEMENT)
+            if (boundaryPoints.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, FarmBorder, RoundedCornerShape(12.dp)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(RoundedCornerShape(5.dp))
+                                        .background(FarmGreenHeader)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Recorded Boundary Points (${boundaryPoints.size})",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = FarmGreenHeader
+                                )
+                            }
+
+                            TextButton(
+                                onClick = onClearPoints,
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text("Clear All", fontSize = 13.sp, color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(boundaryPoints.size) { index ->
+                                val pt = boundaryPoints[index]
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(Color.White)
+                                        .border(1.dp, FarmBorder, RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(FarmGreenHeader),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text("${index + 1}", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "${String.format("%.4f", pt.lat)}, ${String.format("%.4f", pt.lng)}",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = FarmTextDark
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        IconButton(
+                                            onClick = { onDeletePointAt(index) },
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Delete Point ${index + 1}",
+                                                tint = Color(0xFFD32F2F),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 2-DEVICE MARK POINT (DEVICE-TO-DEVICE COOPERATIVE MEASUREMENT)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(1.dp, FarmBorder, RoundedCornerShape(14.dp)),
+                colors = CardDefaults.cardColors(containerColor = FarmGreenLight)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Devices,
+                            contentDescription = null,
+                            tint = FarmGreenHeader,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "2-Device Mark Point (Large Field Mode)",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmGreenHeader
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // My Device Mark Code
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("My Device Mark Code:", fontSize = 13.sp, color = FarmTextSecondary)
+                            Text(myDeviceCode, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
+                        }
+
+                        IconButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("Device Code", myDeviceCode)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(context, "Copied Device Mark Code!", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Copy", tint = FarmGreenPrimary, modifier = Modifier.size(22.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Connect Second Device Code Input
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = secondDeviceCodeInput,
+                            onValueChange = { secondDeviceCodeInput = it },
+                            placeholder = { Text("Paste Device B Code (e.g. MP-15.48-120.97)", fontSize = 13.sp) },
+                            singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black),
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("input_device_b_code"),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black,
+                                focusedBorderColor = FarmGreenPrimary,
+                                unfocusedBorderColor = FarmBorder
+                            )
+                        )
+
+                        Button(
+                            onClick = {
+                                if (secondDeviceCodeInput.startsWith("MP-")) {
+                                    val parts = secondDeviceCodeInput.removePrefix("MP-").split("-")
+                                    if (parts.size >= 2) {
+                                        val rLat = parts[0].toDoubleOrNull()
+                                        val rLng = parts[1].toDoubleOrNull()
+                                        if (rLat != null && rLng != null) {
+                                            val remotePt = MapPoint(rLat, rLng)
+                                            remoteDevicePoint = remotePt
+                                            onAddPointAt(rLat, rLng)
+
+                                            val myPt = currentLocation ?: MapPoint(15.4827, 120.9723)
+                                            interDeviceDistanceMeters = MapUtils.calculateDistanceMeters(myPt, remotePt)
+                                            Toast.makeText(context, "Connected Device B! Inter-device baseline added.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Invalid Device Code format. Use MP-lat-lng", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader),
+                            modifier = Modifier.height(52.dp)
+                        ) {
+                            Text("Link B", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    interDeviceDistanceMeters?.let { dist ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Device A ↔ Device B Distance: ${String.format("%.1f", dist)} meters",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmGreenPrimary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+
         // TRACKING STATUS INDICATOR BANNER
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 10.dp)
-                .clip(RoundedCornerShape(12.dp)),
+                .padding(bottom = 12.dp)
+                .clip(RoundedCornerShape(14.dp)),
             colors = CardDefaults.cardColors(
                 containerColor = if (isTracking && !isPaused) Color(0xFFE8F5E9)
                 else if (isPaused) Color(0xFFFFF3E0)
                 else Color(0xFFF3F4F6)
             ),
             border = androidx.compose.foundation.BorderStroke(
-                1.dp,
+                1.5.dp,
                 if (isTracking && !isPaused) Color(0xFF81C784)
                 else if (isPaused) Color(0xFFFFB74D)
                 else FarmBorder
@@ -861,22 +1634,22 @@ fun MeasurementScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(10.dp)
-                            .clip(RoundedCornerShape(5.dp))
+                            .size(12.dp)
+                            .clip(RoundedCornerShape(6.dp))
                             .background(
                                 if (isTracking && !isPaused) Color(0xFF2E7D32)
                                 else if (isPaused) Color(0xFFEF6C00)
                                 else Color.Gray
                             )
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
                             text = if (isTracking && !isPaused) {
@@ -892,7 +1665,7 @@ fun MeasurementScreen(
                             } else {
                                 " READY TO MEASURE"
                             },
-                            fontSize = 12.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isTracking && !isPaused) Color(0xFF1B5E20)
                             else if (isPaused) Color(0xFFE65100)
@@ -900,13 +1673,13 @@ fun MeasurementScreen(
                         )
                         Text(
                             text = if (isTracking && !isPaused) {
-                                "Walking pathway recording live GPS boundary..."
+                                "Walking pathway recording live boundary points..."
                             } else if (isPaused) {
-                                "Paused. Tap Resume to continue walking."
+                                "Paused. Tap Resume to continue tracking."
                             } else {
                                 "Tap Start Walk to begin recording farm pathway."
                             },
-                            fontSize = 10.sp,
+                            fontSize = 12.sp,
                             color = FarmTextSecondary
                         )
                     }
@@ -917,9 +1690,9 @@ fun MeasurementScreen(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color(0xFF2E7D32))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
-                        Text("WALKING", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text("WALKING", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -934,10 +1707,10 @@ fun MeasurementScreen(
             Button(
                 onClick = onStartTracking,
                 modifier = Modifier
-                    .weight(1.2f)
-                    .height(48.dp)
+                    .weight(1.3f)
+                    .height(54.dp)
                     .testTag("btn_start_measurement"),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isTracking && !isPaused) Color(0xFF1B5E20) else FarmGreenPrimary,
                     contentColor = Color.White
@@ -947,15 +1720,15 @@ fun MeasurementScreen(
                     Icon(
                         imageVector = if (isTracking && !isPaused) Icons.Default.DirectionsWalk else Icons.Default.PlayArrow,
                         contentDescription = "Start",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isTracking && !isPaused) "Recording..."
                         else if (isPaused) "Resume Walk"
                         else "Start Walk",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                        fontSize = 15.sp
                     )
                 }
             }
@@ -966,18 +1739,18 @@ fun MeasurementScreen(
                 enabled = isTracking,
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
+                    .height(54.dp)
                     .testTag("btn_pause_measurement"),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Pause,
                         contentDescription = "Pause",
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Pause", color = if (isTracking) FarmTextDark else Color.Gray)
+                    Text("Pause", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (isTracking) FarmTextDark else Color.Gray)
                 }
             }
 
@@ -989,24 +1762,24 @@ fun MeasurementScreen(
                 enabled = true,
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
+                    .height(54.dp)
                     .testTag("btn_finish_measurement"),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Finish",
                         tint = FarmGreenPrimary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Finish", color = FarmGreenPrimary, fontWeight = FontWeight.Bold)
+                    Text("Finish", fontSize = 14.sp, color = FarmGreenPrimary, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // MEASURING TOOLS CONTROL BAR
         Text(
@@ -1017,11 +1790,11 @@ fun MeasurementScreen(
                 AppLanguage.ILOCANO -> "Rukod nga Ramit"
                 AppLanguage.CEBUANO -> "Mga Gamit sa Pagsukod"
             },
-            fontSize = 13.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = FarmGreenHeader
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Row 1: Mark Point | Undo | Delete Buttons
         Row(
@@ -1033,16 +1806,16 @@ fun MeasurementScreen(
                 onClick = onMarkPoint,
                 modifier = Modifier
                     .weight(1.3f)
-                    .height(46.dp)
+                    .height(50.dp)
                     .testTag("btn_mark_point"),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = FarmGreenHeader)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = "Mark Point",
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -1054,7 +1827,7 @@ fun MeasurementScreen(
                             AppLanguage.CEBUANO -> "Markahi"
                         },
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        fontSize = 14.sp
                     )
                 }
             }
@@ -1065,16 +1838,16 @@ fun MeasurementScreen(
                 enabled = boundaryPoints.isNotEmpty(),
                 modifier = Modifier
                     .weight(1f)
-                    .height(46.dp)
+                    .height(50.dp)
                     .testTag("btn_undo_point"),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Undo,
                         contentDescription = "Undo",
                         tint = if (boundaryPoints.isNotEmpty()) Color(0xFF1976D2) else Color.Gray,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -1086,7 +1859,7 @@ fun MeasurementScreen(
                             AppLanguage.CEBUANO -> "I-undo"
                         },
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
+                        fontSize = 14.sp,
                         color = if (boundaryPoints.isNotEmpty()) Color(0xFF1976D2) else Color.Gray
                     )
                 }
@@ -1098,9 +1871,9 @@ fun MeasurementScreen(
                 enabled = boundaryPoints.isNotEmpty(),
                 modifier = Modifier
                     .weight(1f)
-                    .height(46.dp)
+                    .height(50.dp)
                     .testTag("btn_delete_points"),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Color(0xFFD32F2F)
                 )
@@ -1110,7 +1883,7 @@ fun MeasurementScreen(
                         imageVector = Icons.Default.DeleteOutline,
                         contentDescription = "Delete",
                         tint = if (boundaryPoints.isNotEmpty()) Color(0xFFD32F2F) else Color.Gray,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -1122,7 +1895,7 @@ fun MeasurementScreen(
                             AppLanguage.CEBUANO -> "I-delete"
                         },
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
+                        fontSize = 14.sp,
                         color = if (boundaryPoints.isNotEmpty()) Color(0xFFD32F2F) else Color.Gray
                     )
                 }
@@ -1131,7 +1904,7 @@ fun MeasurementScreen(
 
         // Row 2: Marked Points List with individual Deletion buttons
         if (boundaryPoints.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1139,7 +1912,7 @@ fun MeasurementScreen(
                     .border(1.dp, FarmBorder, RoundedCornerShape(12.dp)),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFB))
             ) {
-                Column(modifier = Modifier.padding(10.dp)) {
+                Column(modifier = Modifier.padding(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1147,22 +1920,22 @@ fun MeasurementScreen(
                     ) {
                         Text(
                             text = "Boundary Points (${boundaryPoints.size})",
-                            fontSize = 12.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = FarmTextDark
                         )
                         TextButton(
                             onClick = onClearPoints,
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp, vertical = 0.dp)
                         ) {
-                            Text("Clear All", fontSize = 11.sp, color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                            Text("Clear All", fontSize = 13.sp, color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         items(boundaryPoints.size) { idx ->
@@ -1172,27 +1945,27 @@ fun MeasurementScreen(
                                     .clip(RoundedCornerShape(16.dp))
                                     .background(Color.White)
                                     .border(1.dp, FarmBorder, RoundedCornerShape(16.dp))
-                                    .padding(start = 10.dp, top = 2.dp, end = 2.dp, bottom = 2.dp)
+                                    .padding(start = 12.dp, top = 4.dp, end = 4.dp, bottom = 4.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = "Pt ${idx + 1}: ${String.format("%.4f", pt.lat)}, ${String.format("%.4f", pt.lng)}",
-                                        fontSize = 11.sp,
+                                        fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = FarmTextDark
                                     )
-                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     IconButton(
                                         onClick = { onDeletePointAt(idx) },
                                         modifier = Modifier
-                                            .size(24.dp)
+                                            .size(28.dp)
                                             .testTag("btn_delete_point_$idx")
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
                                             contentDescription = "Delete Point",
                                             tint = Color(0xFFD32F2F),
-                                            modifier = Modifier.size(14.dp)
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 }
@@ -1203,15 +1976,15 @@ fun MeasurementScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        // Stats Box
+        // High-Legibility Stats Box (Bigger numbers & labels for outdoor field sunlight)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.White)
-                .border(1.dp, FarmBorder, RoundedCornerShape(16.dp))
+                .border(1.5.dp, FarmBorder, RoundedCornerShape(16.dp))
                 .padding(16.dp)
         ) {
             Row(
@@ -1224,44 +1997,62 @@ fun MeasurementScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Sukat ng Lupa / Area", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextSecondary)
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = when (currentLanguage) {
+                            AppLanguage.TAGALOG -> "Sukat ng Lupa"
+                            AppLanguage.ILOCANO -> "Sukat ti Talon"
+                            AppLanguage.CEBUANO -> "Sukat sa Yuta"
+                            else -> "Farm Area"
+                        },
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = FarmTextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = String.format("%.2f", estimatedHectares),
-                        fontSize = 26.sp,
+                        fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = FarmGreenHeader
                     )
-                    Text("Hectares (ha)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
+                    Text("Hectares (ha)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
                 }
 
                 Box(
                     modifier = Modifier
-                        .width(1.dp)
-                        .height(40.dp)
+                        .width(1.5.dp)
+                        .height(50.dp)
                         .background(FarmBorder)
                 )
 
-                // Walking Distance
+                // Walking Distance / Perimeter
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Perimeter", fontSize = 12.sp, color = FarmTextSecondary)
+                    Text(
+                        text = when (currentLanguage) {
+                            AppLanguage.TAGALOG -> "Kabuuang Gilid"
+                            else -> "Perimeter"
+                        },
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = FarmTextSecondary
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${walkingMeters.toInt()}",
-                        fontSize = 20.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = FarmTextDark
                     )
-                    Text("Meters", fontSize = 12.sp, color = FarmTextDark)
+                    Text("Meters", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = FarmTextDark)
                 }
 
                 Box(
                     modifier = Modifier
-                        .width(1.dp)
-                        .height(40.dp)
+                        .width(1.5.dp)
+                        .height(50.dp)
                         .background(FarmBorder)
                 )
 
@@ -1270,17 +2061,18 @@ fun MeasurementScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("GPS Accuracy", fontSize = 12.sp, color = FarmTextSecondary)
+                    Text("GPS Precision", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = FarmTextSecondary)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = if (isTracking) "±2m" else "—",
-                        fontSize = 20.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = FarmTextDark
                     )
                     Text(
                         text = if (isTracking) "High" else gpsAccuracy,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
                         color = FarmTextDark
                     )
                 }
@@ -1290,8 +2082,13 @@ fun MeasurementScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Walk around the farm boundary with camera facing field. Points auto-calculate real area using Cramer & GPS polygon math.",
-            fontSize = 11.sp,
+            text = when (currentLanguage) {
+                AppLanguage.TAGALOG -> "Pumili sa itaas kung Camera AR o GPS Mapa ang nais gamitin. Ang sukat ng lupa ay awtomatikong kinakalkula gamit ang polygon geometry."
+                AppLanguage.ILOCANO -> "Piliem ti ngato nu Camera AR wenno GPS Mapa ti usaren. Ti sukat ti talon ket awtomatiko a maibilang."
+                AppLanguage.CEBUANO -> "Pilia sa ibabaw kung Camera AR o GPS Mapa ang gamiton. Ang sukod sa yuta awtomatikong kuwentahon."
+                else -> "Choose above whether to use Camera AR Optical Tape or GPS Map tracking. Real area is calculated automatically using polygon geometry."
+            },
+            fontSize = 13.sp,
             color = FarmTextSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()

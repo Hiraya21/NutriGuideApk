@@ -321,6 +321,49 @@ class WeatherRepository {
     }
 
     private fun resolveExactLocation(lat: Double, lng: Double, defaultName: String): String {
+        // 1. Try OpenStreetMap Nominatim reverse geocode (high-precision barangay/village resolution in PH)
+        try {
+            val urlStr = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18&addressdetails=1"
+            val url = URL(urlStr)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "NutriGuidePhilippinesApp/1.0 (contact@nutriguide.farm)")
+            conn.connectTimeout = 3000
+            conn.readTimeout = 3000
+            if (conn.responseCode == 200) {
+                val stream = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(stream)
+                val address = json.optJSONObject("address")
+                if (address != null) {
+                    val village = address.optString("village", "").trim()
+                    val suburb = address.optString("suburb", "").trim()
+                    val neighbourhood = address.optString("neighbourhood", "").trim()
+                    val quarter = address.optString("quarter", "").trim()
+                    val hamlet = address.optString("hamlet", "").trim()
+                    val town = address.optString("town", "").trim()
+                    val city = address.optString("city", "").trim()
+                    val municipality = address.optString("municipality", "").trim()
+                    val county = address.optString("county", "").trim()
+
+                    val locality = listOf(village, suburb, neighbourhood, quarter, hamlet)
+                        .firstOrNull { it.isNotBlank() } ?: ""
+
+                    val cityOrTown = listOf(town, city, municipality, county)
+                        .firstOrNull { it.isNotBlank() } ?: ""
+
+                    val result = when {
+                        locality.isNotBlank() -> locality
+                        cityOrTown.isNotBlank() -> cityOrTown
+                        else -> ""
+                    }
+                    if (result.isNotBlank()) return result
+                }
+            }
+        } catch (e: Exception) {
+            // fallback to next geocoder
+        }
+
+        // 2. Fallback to BigDataCloud reverse geocoder
         try {
             val urlStr = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=$lat&longitude=$lng&localityLanguage=en"
             val url = URL(urlStr)
@@ -331,16 +374,15 @@ class WeatherRepository {
             if (conn.responseCode == 200) {
                 val stream = conn.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(stream)
-                val locality = json.optString("locality", "")
-                val city = json.optString("city", "")
-                val principalSubdivision = json.optString("principalSubdivision", "")
+                val locality = json.optString("locality", "").trim()
+                val city = json.optString("city", "").trim()
+                val principalSubdivision = json.optString("principalSubdivision", "").trim()
 
                 val exactName = when {
-                    locality.isNotBlank() && city.isNotBlank() && !city.contains(locality, ignoreCase = true) -> "$locality"
                     locality.isNotBlank() -> locality
                     city.isNotBlank() -> city
                     principalSubdivision.isNotBlank() -> principalSubdivision
-                    else -> defaultName
+                    else -> ""
                 }
                 if (exactName.isNotBlank()) return exactName
             }

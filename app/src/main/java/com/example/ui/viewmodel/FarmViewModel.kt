@@ -21,6 +21,7 @@ import com.example.domain.models.MapPoint
 import com.example.domain.models.MapUtils
 import com.example.domain.models.WeatherRiskLevel
 import com.example.domain.models.WeatherScenario
+import com.example.domain.models.calculateFertilizerAdvisory
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -93,6 +94,15 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     fun setLanguage(language: AppLanguage) {
         _currentLanguage.value = language
         prefs.edit().putString("selected_lang", language.name).apply()
+        val current = _weatherData.value
+        _weatherData.value = current.copy(
+            advisory = calculateFertilizerAdvisory(
+                precipitationSumMm = current.precipitationSumMm,
+                maxTempC = current.maxTempC,
+                windSpeedKmh = current.windSpeedKmh,
+                language = language
+            )
+        )
     }
 
     // Navigation Tab
@@ -187,6 +197,9 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
                     _currentLocation.value = p
                     val acc = loc.accuracy.toInt()
                     _gpsAccuracyText.value = "±${acc}m (${if (acc <= 5) "High" else if (acc <= 15) "Medium" else "Low"})"
+                    if (_selectedWeatherScenario.value == WeatherScenario.LIVE_GPS) {
+                        refreshWeatherData()
+                    }
                 }
             }.addOnFailureListener {
                 if (_currentLocation.value == null) {
@@ -1171,7 +1184,15 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
                 locationName = locName,
                 scenario = scenario
             )
-            _weatherData.value = data
+            val lang = _currentLanguage.value
+            _weatherData.value = data.copy(
+                advisory = calculateFertilizerAdvisory(
+                    precipitationSumMm = data.precipitationSumMm,
+                    maxTempC = data.maxTempC,
+                    windSpeedKmh = data.windSpeedKmh,
+                    language = lang
+                )
+            )
         }
     }
 

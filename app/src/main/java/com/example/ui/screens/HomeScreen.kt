@@ -289,6 +289,7 @@ fun HomeScreen(
         // Weather & Fertilizer Safety Alert Card
         Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             WeatherAdvisoryCard(
+                currentLanguage = currentLanguage,
                 weatherData = weatherData,
                 regions = agriculturalRegions,
                 selectedRegion = selectedRegion,

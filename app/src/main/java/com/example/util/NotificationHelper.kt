@@ -132,6 +132,17 @@ object NotificationHelper {
         }
     }
 
+    fun sendWeatherWarningNotification(
+        context: Context,
+        advisory: com.example.domain.models.FertilizerAdvisory,
+        language: AppLanguage? = null
+    ) {
+        val currentLang = language ?: getCurrentLanguage(context)
+        val notifTitle = advisory.title
+        val notifBody = "${advisory.summary}\n• ${advisory.ureaAdvice}\n• ${advisory.bestApplicationWindow}"
+        sendWeatherWarningNotification(context, notifTitle, notifBody)
+    }
+
     fun sendDailyActivityReminder(context: Context) {
         createNotificationChannel(context)
 
