@@ -153,19 +153,41 @@ fun WeatherAdvisoryCard(
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    when {
+                                        selectedScenario != WeatherScenario.LIVE_GPS -> Color.White.copy(alpha = 0.25f)
+                                        weatherData.isLiveApi -> Color(0xFF1B5E20).copy(alpha = 0.4f)
+                                        else -> Color(0xFFE65100).copy(alpha = 0.45f)
+                                    }
+                                )
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .size(6.dp)
+                                    .size(7.dp)
                                     .clip(CircleShape)
-                                    .background(if (weatherData.isLiveApi) Color(0xFF69F0AE) else Color(0xFFFFD54F))
+                                    .background(
+                                        when {
+                                            selectedScenario != WeatherScenario.LIVE_GPS -> Color(0xFFFFD54F)
+                                            weatherData.isLiveApi -> Color(0xFF69F0AE)
+                                            else -> Color(0xFFFFB74D)
+                                        }
+                                    )
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = if (weatherData.isLiveApi) "GPS Live Forecast" else "Simulated Forecast",
+                                text = when {
+                                    selectedScenario != WeatherScenario.LIVE_GPS -> "Simulated: ${selectedScenario.name}"
+                                    weatherData.isLiveApi -> "🟢 Real-Time GPS Forecast"
+                                    else -> "🟠 Offline Mode • Cached Content"
+                                },
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.85f)
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
                             )
                         }
                     }

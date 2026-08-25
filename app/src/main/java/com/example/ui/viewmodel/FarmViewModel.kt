@@ -14,6 +14,8 @@ import com.example.data.repository.FarmRepository
 import com.example.data.repository.GuideRepository
 import com.example.data.repository.WeatherRepository
 import com.example.domain.models.AppLanguage
+import com.example.domain.models.DailyForecastDay
+import com.example.domain.models.DisplayReadabilityMode
 import com.example.domain.models.FarmWeatherData
 import com.example.domain.models.FertilizerItem
 import com.example.domain.models.GuideArticle
@@ -28,6 +30,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.example.util.NetworkMonitor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -79,12 +82,64 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentLanguage = MutableStateFlow(initialLang)
     val currentLanguage = _currentLanguage.asStateFlow()
 
+    // Readability & Text Contrast Mode State (Standard vs High Contrast / Extra Large for direct sunlight)
+    private val initialReadabilityMode = try {
+        DisplayReadabilityMode.valueOf(
+            prefs.getString("display_readability_mode", DisplayReadabilityMode.STANDARD.name)
+                ?: DisplayReadabilityMode.STANDARD.name
+        )
+    } catch (e: Exception) {
+        DisplayReadabilityMode.STANDARD
+    }
+    private val _displayReadabilityMode = MutableStateFlow(initialReadabilityMode)
+    val displayReadabilityMode = _displayReadabilityMode.asStateFlow()
+
+    val isHighContrastMode: StateFlow<Boolean> = combine(_displayReadabilityMode) { (mode) ->
+        mode == DisplayReadabilityMode.HIGH_CONTRAST_XL
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), initialReadabilityMode == DisplayReadabilityMode.HIGH_CONTRAST_XL)
+
+    fun setDisplayReadabilityMode(mode: DisplayReadabilityMode) {
+        _displayReadabilityMode.value = mode
+        prefs.edit().putString("display_readability_mode", mode.name).apply()
+    }
+
+    fun toggleDisplayReadabilityMode() {
+        val nextMode = if (_displayReadabilityMode.value == DisplayReadabilityMode.STANDARD) {
+            DisplayReadabilityMode.HIGH_CONTRAST_XL
+        } else {
+            DisplayReadabilityMode.STANDARD
+        }
+        setDisplayReadabilityMode(nextMode)
+    }
+
     // Autosave & Restore Notification State
     private val _restoredSessionNotice = MutableStateFlow<String?>(null)
     val restoredSessionNotice = _restoredSessionNotice.asStateFlow()
 
     fun dismissRestoredNotice() {
         _restoredSessionNotice.value = null
+    }
+
+    // Network Connectivity & Offline Mode State
+    private val networkMonitor = NetworkMonitor(application)
+    val isDeviceOnline: StateFlow<Boolean> = networkMonitor.isOnline
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), networkMonitor.checkCurrentConnectivity())
+
+    private val _isForcedOffline = MutableStateFlow(false)
+    val isForcedOffline = _isForcedOffline.asStateFlow()
+
+    // Combined effective offline status
+    val isOfflineMode: StateFlow<Boolean> = combine(isDeviceOnline, _isForcedOffline) { online, forced ->
+        !online || forced
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), !networkMonitor.checkCurrentConnectivity())
+
+    fun toggleForcedOffline() {
+        _isForcedOffline.value = !_isForcedOffline.value
+        refreshWeatherData()
+    }
+
+    fun retryLiveSync() {
+        refreshWeatherData()
     }
 
     init {
@@ -1152,6 +1207,11 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private val _weatherData = MutableStateFlow(FarmWeatherData())
     val weatherData: StateFlow<FarmWeatherData> = _weatherData.asStateFlow()
 
+    // Tracks if current content is from local storage / cache
+    val isAccessingCachedContent: StateFlow<Boolean> = combine(isOfflineMode, _weatherData) { offline, weather ->
+        offline || weather.isCachedData
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     init {
         checkAndRestoreAutoSavedProgress()
         refreshWeatherData()
@@ -1178,12 +1238,34 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
             val lng = if (isGpsMode && currLoc != null) currLoc.lng else reg.lng
             val locName = if (isGpsMode && currLoc != null) "GPS Field Location (${reg.province})" else reg.name
 
-            val data = weatherRepository.fetchWeatherForLocation(
-                lat = lat,
-                lng = lng,
-                locationName = locName,
-                scenario = scenario
-            )
+            val data = if (_isForcedOffline.value) {
+                FarmWeatherData(
+                    locationName = reg.name,
+                    lat = reg.lat,
+                    lng = reg.lng,
+                    currentTempC = reg.defaultTempC,
+                    maxTempC = reg.defaultTempC + 2.0,
+                    minTempC = reg.defaultTempC - 5.0,
+                    precipitationSumMm = reg.defaultRainMm,
+                    windSpeedKmh = reg.defaultWindKmh,
+                    weatherCondition = reg.condition,
+                    isLiveApi = false,
+                    isCachedData = true,
+                    lastSyncTime = "Offline Local Cache",
+                    dailyForecast = listOf(
+                        DailyForecastDay("Today", reg.defaultTempC + 2.0, reg.defaultTempC - 5.0, reg.defaultRainMm, 20, 2, reg.condition),
+                        DailyForecastDay("Tomorrow", reg.defaultTempC + 1.5, reg.defaultTempC - 4.5, reg.defaultRainMm * 0.8, 15, 2, "Partly Cloudy ⛅"),
+                        DailyForecastDay("Day 3", reg.defaultTempC + 2.0, reg.defaultTempC - 5.0, 1.0, 10, 1, "Mainly Clear 🌤️")
+                    )
+                )
+            } else {
+                weatherRepository.fetchWeatherForLocation(
+                    lat = lat,
+                    lng = lng,
+                    locationName = locName,
+                    scenario = scenario
+                )
+            }
             val lang = _currentLanguage.value
             _weatherData.value = data.copy(
                 advisory = calculateFertilizerAdvisory(

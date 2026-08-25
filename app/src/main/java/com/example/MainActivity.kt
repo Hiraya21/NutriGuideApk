@@ -22,8 +22,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import com.example.domain.models.AppLanguage
 import com.example.domain.models.GuideArticle
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import com.example.ui.components.BottomNavBar
 import com.example.ui.components.DeleteAccountModal
+import com.example.ui.components.OfflineStatusBanner
 import com.example.ui.components.SplashScreen
 import com.example.ui.components.TopNavBar
 import com.example.ui.screens.BookletScreen
@@ -59,8 +62,10 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
-                RiceFarmAssistantApp()
+            val viewModel: FarmViewModel = viewModel()
+            val isHighContrastMode by viewModel.isHighContrastMode.collectAsStateWithLifecycle()
+            MyApplicationTheme(isHighContrast = isHighContrastMode) {
+                RiceFarmAssistantApp(viewModel = viewModel)
             }
         }
     }
@@ -72,6 +77,8 @@ fun RiceFarmAssistantApp(
 ) {
     val currentTab by viewModel.currentTab.collectAsStateWithLifecycle()
     val selectedGuide by viewModel.selectedGuide.collectAsStateWithLifecycle()
+    val isHighContrastMode by viewModel.isHighContrastMode.collectAsStateWithLifecycle()
+    val displayReadabilityMode by viewModel.displayReadabilityMode.collectAsStateWithLifecycle()
     var isSoilAnalysisOpen by remember { mutableStateOf(false) }
     var isSplashVisible by remember { mutableStateOf(true) }
 
@@ -138,6 +145,11 @@ fun RiceFarmAssistantApp(
     // Autosave notification state
     val restoredSessionNotice by viewModel.restoredSessionNotice.collectAsStateWithLifecycle()
 
+    // Offline & Connectivity states
+    val isOfflineMode by viewModel.isOfflineMode.collectAsStateWithLifecycle()
+    val isAccessingCachedContent by viewModel.isAccessingCachedContent.collectAsStateWithLifecycle()
+    val isForcedOffline by viewModel.isForcedOffline.collectAsStateWithLifecycle()
+
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(accountDeletedMessage) {
@@ -156,7 +168,11 @@ fun RiceFarmAssistantApp(
                 isSoilAnalysisOpen = isSoilAnalysisOpen,
                 isGuideDetailOpen = selectedGuide != null,
                 currentLanguage = currentLanguage,
-                onLanguageSelected = { viewModel.setLanguage(it) }
+                onLanguageSelected = { viewModel.setLanguage(it) },
+                isHighContrastMode = isHighContrastMode,
+                onToggleHighContrastMode = { viewModel.toggleDisplayReadabilityMode() },
+                isOffline = isOfflineMode,
+                onOfflineClick = { /* Handled via Banner and dialog */ }
             )
         },
         bottomBar = {
@@ -171,68 +187,90 @@ fun RiceFarmAssistantApp(
             )
         }
     ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (isSoilAnalysisOpen) {
-                SoilAnalysisScreen(
-                    crop = soilCrop,
-                    soilType = soilType,
-                    nitrogen = nitrogenLevel,
-                    phosphorus = phosphorusLevel,
-                    potassium = potassiumLevel,
-                    organicMatter = organicMatter,
-                    recommendation = soilRecommendation,
-                    activeReport = activeSoilReport,
-                    savedReports = savedSoilReports,
-                    isGeminiAnalyzing = isGeminiAnalyzing,
-                    geminiError = geminiError,
-                    onCropChange = { viewModel.setSoilCrop(it) },
-                    onSoilTypeChange = { viewModel.setSoilType(it) },
-                    onNitrogenChange = { viewModel.setNitrogenLevel(it) },
-                    onPhosphorusChange = { viewModel.setPhosphorusLevel(it) },
-                    onPotassiumChange = { viewModel.setPotassiumLevel(it) },
-                    onOrganicMatterChange = { viewModel.setOrganicMatter(it) },
-                    onGenerate = { viewModel.generateSoilRecommendation() },
-                    onGenerateCustom = { c, t, n, p, k, om, ph, moisture ->
-                        viewModel.generateSoilRecommendationWithCustomValues(c, t, n, p, k, om, ph, moisture)
-                    },
-                    onAnalyzeWithGemini = { bitmap, crop, onDone ->
-                        viewModel.analyzeSoilWithGemini(bitmap, crop, onDone)
-                    },
-                    onDismissGeminiError = { viewModel.dismissGeminiError() },
-                    onSaveReport = { viewModel.saveActiveSoilReport() },
-                    onDeleteReport = { viewModel.deleteSoilReport(it) },
-                    onSelectSavedReport = { viewModel.selectSavedSoilReport(it) },
-                    onBack = { isSoilAnalysisOpen = false },
-                    currentLanguage = currentLanguage,
-                    onLanguageSelected = { viewModel.setLanguage(it) }
-                )
-            } else if (selectedGuide != null) {
-                GuideDetailScreen(
-                    article = selectedGuide!!,
-                    onBack = { viewModel.closeGuide() },
-                    currentLanguage = currentLanguage,
-                    onLanguageSelected = { viewModel.setLanguage(it) }
-                )
-            } else {
-                when (currentTab) {
-                    0 -> HomeScreen(
+            // Visual Offline & Cache Status Banner
+            OfflineStatusBanner(
+                isOffline = isOfflineMode,
+                isCachedContent = isAccessingCachedContent,
+                currentLanguage = currentLanguage,
+                lastSyncTime = weatherData.lastSyncTime,
+                onRetrySync = { viewModel.retryLiveSync() },
+                isForcedOffline = isForcedOffline,
+                onToggleForcedOffline = { viewModel.toggleForcedOffline() }
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                if (isSoilAnalysisOpen) {
+                    SoilAnalysisScreen(
+                        crop = soilCrop,
+                        soilType = soilType,
+                        nitrogen = nitrogenLevel,
+                        phosphorus = phosphorusLevel,
+                        potassium = potassiumLevel,
+                        organicMatter = organicMatter,
+                        recommendation = soilRecommendation,
+                        activeReport = activeSoilReport,
+                        savedReports = savedSoilReports,
+                        isGeminiAnalyzing = isGeminiAnalyzing,
+                        geminiError = geminiError,
+                        onCropChange = { viewModel.setSoilCrop(it) },
+                        onSoilTypeChange = { viewModel.setSoilType(it) },
+                        onNitrogenChange = { viewModel.setNitrogenLevel(it) },
+                        onPhosphorusChange = { viewModel.setPhosphorusLevel(it) },
+                        onPotassiumChange = { viewModel.setPotassiumLevel(it) },
+                        onOrganicMatterChange = { viewModel.setOrganicMatter(it) },
+                        onGenerate = { viewModel.generateSoilRecommendation() },
+                        onGenerateCustom = { c, t, n, p, k, om, ph, moisture ->
+                            viewModel.generateSoilRecommendationWithCustomValues(c, t, n, p, k, om, ph, moisture)
+                        },
+                        onAnalyzeWithGemini = { bitmap, crop, onDone ->
+                            viewModel.analyzeSoilWithGemini(bitmap, crop, onDone)
+                        },
+                        onDismissGeminiError = { viewModel.dismissGeminiError() },
+                        onSaveReport = { viewModel.saveActiveSoilReport() },
+                        onDeleteReport = { viewModel.deleteSoilReport(it) },
+                        onSelectSavedReport = { viewModel.selectSavedSoilReport(it) },
+                        onBack = { isSoilAnalysisOpen = false },
                         currentLanguage = currentLanguage,
-                        weatherData = weatherData,
-                        agriculturalRegions = agriculturalRegions,
-                        selectedRegion = selectedRegion,
-                        selectedWeatherScenario = selectedWeatherScenario,
-                        onLanguageSelected = { viewModel.setLanguage(it) },
-                        onRegionSelected = { reg -> viewModel.selectWeatherRegion(reg) },
-                        onScenarioSelected = { scenario -> viewModel.setWeatherScenario(scenario) },
-                        onRefreshWeather = { viewModel.refreshWeatherData() },
-                        onNavigateToTab = { tab -> viewModel.selectTab(tab) },
-                        onOpenSoilAnalysis = { isSoilAnalysisOpen = true },
-                        onOpenDeleteAccount = { viewModel.openDeleteAccountModal() }
+                        onLanguageSelected = { viewModel.setLanguage(it) }
                     )
+                } else if (selectedGuide != null) {
+                    GuideDetailScreen(
+                        article = selectedGuide!!,
+                        onBack = { viewModel.closeGuide() },
+                        currentLanguage = currentLanguage,
+                        onLanguageSelected = { viewModel.setLanguage(it) }
+                    )
+                } else {
+                    when (currentTab) {
+                        0 -> HomeScreen(
+                            currentLanguage = currentLanguage,
+                            weatherData = weatherData,
+                            agriculturalRegions = agriculturalRegions,
+                            selectedRegion = selectedRegion,
+                            selectedWeatherScenario = selectedWeatherScenario,
+                            displayReadabilityMode = displayReadabilityMode,
+                            isOffline = isOfflineMode,
+                            isCachedContent = isAccessingCachedContent,
+                            isForcedOffline = isForcedOffline,
+                            onToggleForcedOffline = { viewModel.toggleForcedOffline() },
+                            onReadabilityModeChanged = { mode -> viewModel.setDisplayReadabilityMode(mode) },
+                            onLanguageSelected = { viewModel.setLanguage(it) },
+                            onRegionSelected = { reg -> viewModel.selectWeatherRegion(reg) },
+                            onScenarioSelected = { scenario -> viewModel.setWeatherScenario(scenario) },
+                            onRefreshWeather = { viewModel.refreshWeatherData() },
+                            onNavigateToTab = { tab -> viewModel.selectTab(tab) },
+                            onOpenSoilAnalysis = { isSoilAnalysisOpen = true },
+                            onOpenDeleteAccount = { viewModel.openDeleteAccountModal() }
+                        )
                     1 -> MeasurementScreen(
                         cropType = cropType,
                         isTracking = isTracking,
@@ -307,15 +345,16 @@ fun RiceFarmAssistantApp(
                     )
                 }
             }
-
-            // Global Delete Account Modal
-            DeleteAccountModal(
-                isVisible = isDeleteAccountModalVisible,
-                currentLanguage = currentLanguage,
-                onConfirmDelete = { viewModel.deleteUserAccount() },
-                onDismiss = { viewModel.closeDeleteAccountModal() }
-            )
         }
+
+        // Global Delete Account Modal
+        DeleteAccountModal(
+            isVisible = isDeleteAccountModalVisible,
+            currentLanguage = currentLanguage,
+            onConfirmDelete = { viewModel.deleteUserAccount() },
+            onDismiss = { viewModel.closeDeleteAccountModal() }
+        )
     }
+}
 }
 

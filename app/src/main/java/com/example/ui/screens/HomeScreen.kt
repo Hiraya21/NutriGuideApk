@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.data.repository.AgriculturalRegion
 import com.example.domain.models.AppLanguage
+import com.example.domain.models.DisplayReadabilityMode
 import com.example.domain.models.FarmWeatherData
 import com.example.domain.models.WeatherScenario
 import com.example.ui.components.LanguageDropdown
@@ -81,6 +82,11 @@ import com.example.util.NotificationHelper
 
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
+import com.example.ui.components.OfflineInfoDialog
 import androidx.compose.material3.IconButton
 
 @Composable
@@ -90,6 +96,12 @@ fun HomeScreen(
     agriculturalRegions: List<AgriculturalRegion> = emptyList(),
     selectedRegion: AgriculturalRegion = AgriculturalRegion("Nueva Ecija (Rice Granary)", "Central Luzon", 15.4827, 120.9723, 31.5, 2.5, 12.0, "Partly Cloudy"),
     selectedWeatherScenario: WeatherScenario = WeatherScenario.LIVE_GPS,
+    displayReadabilityMode: DisplayReadabilityMode = DisplayReadabilityMode.STANDARD,
+    isOffline: Boolean = false,
+    isCachedContent: Boolean = false,
+    isForcedOffline: Boolean = false,
+    onToggleForcedOffline: () -> Unit = {},
+    onReadabilityModeChanged: (DisplayReadabilityMode) -> Unit = {},
     onLanguageSelected: (AppLanguage) -> Unit,
     onRegionSelected: (AgriculturalRegion) -> Unit = {},
     onScenarioSelected: (WeatherScenario) -> Unit = {},
@@ -100,6 +112,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var showOfflineInfoDialog by remember { mutableStateOf(false) }
 
     var pendingNotificationAction by remember { mutableStateOf<String?>(null) }
 
@@ -206,25 +219,30 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        // Offline Badge Chip
+                        // Offline / Online Status Badge Chip
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(Color.White.copy(alpha = 0.2f))
+                                .background(
+                                    if (isOffline) Color(0xFFFF9800).copy(alpha = 0.9f)
+                                    else Color.White.copy(alpha = 0.2f)
+                                )
+                                .clickable { showOfflineInfoDialog = true }
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .testTag("chip_offline_status_indicator")
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    imageVector = Icons.Default.CheckCircle,
+                                    imageVector = if (isOffline) Icons.Default.CloudOff else Icons.Default.CloudDone,
                                     contentDescription = null,
-                                    tint = Color(0xFFA5D6A7),
+                                    tint = if (isOffline) Color.White else Color(0xFFA5D6A7),
                                     modifier = Modifier.size(13.dp)
                                 )
-                                Spacer(modifier = Modifier.width(3.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Offline Ready",
+                                    text = if (isOffline) "Offline (Cache)" else "Online (Live)",
                                     fontSize = 10.sp,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                             }
@@ -554,6 +572,186 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Display & Sunlight Visibility Mode Settings Card
+            val displaySettingsTitle = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "Outdoor Sunlight & Text Mode"
+                AppLanguage.TAGALOG -> "Liwanag at Laki ng Letra"
+                AppLanguage.TAGLISH -> "Sunlight & Text Mode Settings"
+                AppLanguage.ILOCANO -> "Silaw ken Kadakkel ti Letra"
+                AppLanguage.CEBUANO -> "Kahayag ug Kadak-on sa Letra"
+            }
+            val displaySettingsSub = when (currentLanguage) {
+                AppLanguage.ENGLISH -> "Switch between Standard and Extra Large / High Contrast for direct sunlight reading."
+                AppLanguage.TAGALOG -> "Piliin ang Extra Large & High Contrast para sa malinaw na pagbasa sa init ng araw."
+                AppLanguage.TAGLISH -> "Toggle Extra Large & High Contrast para madaling mabasa sa field."
+                AppLanguage.ILOCANO -> "Agpili ti Extra Large ken High Contrast para masilawan nga aldaw."
+                AppLanguage.CEBUANO -> "Pilia ang Extra Large ug High Contrast para sayon basahon sa init nga adlaw."
+            }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("card_readability_mode_settings")
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(
+                        width = if (displayReadabilityMode == DisplayReadabilityMode.HIGH_CONTRAST_XL) 2.5.dp else 1.dp,
+                        color = if (displayReadabilityMode == DisplayReadabilityMode.HIGH_CONTRAST_XL) FarmGreenPrimary else FarmBorder,
+                        shape = RoundedCornerShape(16.dp)
+                    ),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (displayReadabilityMode == DisplayReadabilityMode.HIGH_CONTRAST_XL) Color(0xFFF9FCF9) else Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (displayReadabilityMode == DisplayReadabilityMode.HIGH_CONTRAST_XL) Color(0xFFFFE082)
+                                    else FarmGreenLight
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.WbSunny,
+                                contentDescription = displaySettingsTitle,
+                                tint = if (displayReadabilityMode == DisplayReadabilityMode.HIGH_CONTRAST_XL) Color(0xFFE65100) else FarmGreenPrimary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = displaySettingsTitle,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = FarmTextDark
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = displaySettingsSub,
+                                fontSize = 13.sp,
+                                color = FarmTextSecondary,
+                                lineHeight = 17.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Mode Selection Chips / Buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val isStandardSelected = displayReadabilityMode == DisplayReadabilityMode.STANDARD
+                        val isHighContrastSelected = displayReadabilityMode == DisplayReadabilityMode.HIGH_CONTRAST_XL
+
+                        // Standard Option Button
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isStandardSelected) FarmGreenPrimary else Color(0xFFF5F5F5)
+                                )
+                                .border(
+                                    width = if (isStandardSelected) 2.dp else 1.dp,
+                                    color = if (isStandardSelected) FarmGreenHeader else Color(0xFFE0E0E0),
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .clickable { onReadabilityModeChanged(DisplayReadabilityMode.STANDARD) }
+                                .padding(vertical = 10.dp, horizontal = 8.dp)
+                                .testTag("toggle_readability_mode_standard"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (isStandardSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
+                                    Text(
+                                        text = "Standard",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isStandardSelected) Color.White else FarmTextDark
+                                    )
+                                }
+                                Text(
+                                    text = "Normal Text",
+                                    fontSize = 11.sp,
+                                    color = if (isStandardSelected) Color.White.copy(alpha = 0.85f) else FarmTextSecondary
+                                )
+                            }
+                        }
+
+                        // High Contrast / Extra Large Sunlight Option Button
+                        Box(
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isHighContrastSelected) Color(0xFF1B5E20) else Color(0xFFFFF8E1)
+                                )
+                                .border(
+                                    width = if (isHighContrastSelected) 2.dp else 1.5.dp,
+                                    color = if (isHighContrastSelected) Color(0xFFFFD54F) else Color(0xFFFFB74D),
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .clickable { onReadabilityModeChanged(DisplayReadabilityMode.HIGH_CONTRAST_XL) }
+                                .padding(vertical = 10.dp, horizontal = 8.dp)
+                                .testTag("toggle_readability_mode_high_contrast"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.WbSunny,
+                                        contentDescription = null,
+                                        tint = if (isHighContrastSelected) Color(0xFFFFD54F) else Color(0xFFE65100),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Sunlight ☀️ / XL",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (isHighContrastSelected) Color(0xFFFFD54F) else Color(0xFFE65100)
+                                    )
+                                }
+                                Text(
+                                    text = "Extra Large & Contrast",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isHighContrastSelected) Color.White.copy(alpha = 0.9f) else Color(0xFF8D6E63)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Card 5: Account & Data Settings (Delete Account)
             val card5Title = when (currentLanguage) {
                 AppLanguage.ENGLISH -> "Account & Privacy"
@@ -579,6 +777,22 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showOfflineInfoDialog) {
+        OfflineInfoDialog(
+            isOffline = isOffline,
+            isCachedContent = isCachedContent,
+            isForcedOffline = isForcedOffline,
+            currentLanguage = currentLanguage,
+            lastSyncTime = weatherData.lastSyncTime,
+            onDismiss = { showOfflineInfoDialog = false },
+            onRetrySync = {
+                onRefreshWeather()
+                showOfflineInfoDialog = false
+            },
+            onToggleForcedOffline = onToggleForcedOffline
+        )
     }
 }
 

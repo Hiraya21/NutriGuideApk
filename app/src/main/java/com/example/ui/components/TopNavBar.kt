@@ -15,9 +15,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -49,6 +53,10 @@ fun TopNavBar(
     isGuideDetailOpen: Boolean,
     currentLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
+    isHighContrastMode: Boolean = false,
+    onToggleHighContrastMode: () -> Unit = {},
+    isOffline: Boolean = false,
+    onOfflineClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -127,6 +135,64 @@ fun TopNavBar(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
+
+            // Offline Mode Indicator Pill
+            if (isOffline) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFFFF9800))
+                        .clickable { onOfflineClick() }
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .testTag("top_bar_offline_badge")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudOff,
+                        contentDescription = "Offline Mode Active",
+                        tint = Color.White,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "Offline",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+
+            // Quick High Contrast / Sunlight Mode Toggle Button
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        if (isHighContrastMode) Color(0xFFFFD54F) // Vibrant Amber/Yellow badge when active in sunlight
+                        else Color.White.copy(alpha = 0.18f)
+                    )
+                    .clickable { onToggleHighContrastMode() }
+                    .padding(horizontal = 9.dp, vertical = 6.dp)
+                    .testTag("toggle_high_contrast_mode")
+            ) {
+                Icon(
+                    imageVector = if (isHighContrastMode) Icons.Default.WbSunny else Icons.Default.BrightnessMedium,
+                    contentDescription = "Toggle Sunlight High Contrast Mode",
+                    tint = if (isHighContrastMode) Color(0xFF2A1E17) else Color.White,
+                    modifier = Modifier.size(17.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = if (isHighContrastMode) "Sun ☀️" else "Sunlight",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isHighContrastMode) Color(0xFF2A1E17) else Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
 
             // Persistent Language Switcher Icon Button & Dropdown
             Box {

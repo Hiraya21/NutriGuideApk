@@ -262,6 +262,8 @@ class WeatherRepository {
                             }
                         }
 
+                        val nowFormatted = SimpleDateFormat("h:mm a", Locale.US).format(java.util.Date())
+
                         return@withContext FarmWeatherData(
                             locationName = resolvedName,
                             lat = lat,
@@ -277,6 +279,8 @@ class WeatherRepository {
                             aqiIndex = liveAqi,
                             dailyForecast = dailyForecastList,
                             isLiveApi = true,
+                            isCachedData = false,
+                            lastSyncTime = "Live ($nowFormatted)",
                             advisory = calculateFertilizerAdvisory(precipSum, maxTemp, windKmh)
                         )
                     }
@@ -314,6 +318,8 @@ class WeatherRepository {
                     aqiIndex = 41,
                     dailyForecast = fallbackForecast,
                     isLiveApi = false,
+                    isCachedData = true,
+                    lastSyncTime = "Offline Regional Cache",
                     advisory = calculateFertilizerAdvisory(rain, temp + 2.0, wind)
                 )
             }

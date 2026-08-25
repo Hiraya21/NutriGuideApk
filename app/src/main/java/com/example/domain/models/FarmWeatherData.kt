@@ -50,6 +50,8 @@ data class FarmWeatherData(
     val aqiIndex: Int = 41,
     val dailyForecast: List<DailyForecastDay> = emptyList(),
     val isLiveApi: Boolean = false,
+    val isCachedData: Boolean = true,
+    val lastSyncTime: String = "Offline Cache",
     val advisory: FertilizerAdvisory = calculateFertilizerAdvisory(
         precipitationSumMm = 2.5,
         maxTempC = 33.0,
