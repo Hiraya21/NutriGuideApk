@@ -10,17 +10,22 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.database.AppDatabase
 import com.example.data.model.FarmRecord
 import com.example.data.repository.AgriculturalRegion
+import com.example.data.repository.AuthRepository
 import com.example.data.repository.FarmRepository
 import com.example.data.repository.GuideRepository
 import com.example.data.repository.WeatherRepository
+import com.example.domain.models.AdminAuditLog
 import com.example.domain.models.AppLanguage
 import com.example.domain.models.DailyForecastDay
 import com.example.domain.models.DisplayReadabilityMode
 import com.example.domain.models.FarmWeatherData
+import com.example.domain.models.FarmerRegistryItem
 import com.example.domain.models.FertilizerItem
 import com.example.domain.models.GuideArticle
 import com.example.domain.models.MapPoint
 import com.example.domain.models.MapUtils
+import com.example.domain.models.UserAccount
+import com.example.domain.models.UserRole
 import com.example.domain.models.WeatherRiskLevel
 import com.example.domain.models.WeatherScenario
 import com.example.domain.models.calculateFertilizerAdvisory
@@ -140,6 +145,115 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
 
     fun retryLiveSync() {
         refreshWeatherData()
+    }
+
+    // Auth & Accounts State
+    val authRepository = AuthRepository(application)
+    val currentUser: StateFlow<UserAccount> = authRepository.currentUser
+    val auditLogs: StateFlow<List<AdminAuditLog>> = authRepository.auditLogs
+    val farmerRegistry: StateFlow<List<FarmerRegistryItem>> = authRepository.farmerRegistry
+
+    private val _isAuthModalOpen = MutableStateFlow(false)
+    val isAuthModalOpen = _isAuthModalOpen.asStateFlow()
+
+    private val _isAdminDashboardOpen = MutableStateFlow(false)
+    val isAdminDashboardOpen = _isAdminDashboardOpen.asStateFlow()
+
+    private val _isLandingScreenOpen = MutableStateFlow(true)
+    val isLandingScreenOpen = _isLandingScreenOpen.asStateFlow()
+
+    private val _isLogoutConfirmationOpen = MutableStateFlow(false)
+    val isLogoutConfirmationOpen = _isLogoutConfirmationOpen.asStateFlow()
+
+    fun promptLogout() {
+        _isLogoutConfirmationOpen.value = true
+    }
+
+    fun dismissLogoutPrompt() {
+        _isLogoutConfirmationOpen.value = false
+    }
+
+    fun confirmLogout() {
+        _isLogoutConfirmationOpen.value = false
+        logout()
+    }
+
+    fun openAuthModal() {
+        _isAuthModalOpen.value = true
+    }
+
+    fun closeAuthModal() {
+        _isAuthModalOpen.value = false
+    }
+
+    fun openAdminDashboard() {
+        _isAdminDashboardOpen.value = true
+    }
+
+    fun closeAdminDashboard() {
+        _isAdminDashboardOpen.value = false
+    }
+
+    fun openLandingScreen() {
+        _isLandingScreenOpen.value = true
+        _isAdminDashboardOpen.value = false
+        _isAuthModalOpen.value = false
+    }
+
+    fun closeLandingScreen() {
+        _isLandingScreenOpen.value = false
+    }
+
+    fun loginFarmer(identifier: String, passcode: String): Result<UserAccount> {
+        val result = authRepository.loginFarmer(identifier, passcode)
+        if (result.isSuccess) {
+            val farmer = result.getOrNull()
+            if (farmer != null && farmer.farmAreaHectares > 0) {
+                _fertilizerFarmArea.value = farmer.farmAreaHectares.toString()
+                _selectedCrop.value = farmer.primaryCrop
+            }
+            _isLandingScreenOpen.value = false
+        }
+        return result
+    }
+
+    fun registerFarmer(
+        fullName: String,
+        phone: String,
+        rsbsa: String,
+        province: String,
+        municipality: String,
+        farmAreaHa: Double,
+        crop: String
+    ): Result<UserAccount> {
+        val result = authRepository.registerFarmer(fullName, phone, rsbsa, province, municipality, farmAreaHa, crop)
+        if (result.isSuccess) {
+            _fertilizerFarmArea.value = farmAreaHa.toString()
+            _selectedCrop.value = crop
+            _isLandingScreenOpen.value = false
+        }
+        return result
+    }
+
+    fun loginAdminPersonnel(identifier: String, passcode: String): Result<UserAccount> {
+        val result = authRepository.loginAuthorizedPersonnel(identifier, passcode)
+        if (result.isSuccess) {
+            _isAdminDashboardOpen.value = true
+            _isLandingScreenOpen.value = false
+        }
+        return result
+    }
+
+    fun logout() {
+        authRepository.logout()
+        _isAdminDashboardOpen.value = false
+        _isAuthModalOpen.value = false
+        _isLandingScreenOpen.value = true
+    }
+
+    fun switchRoleToFarmer() {
+        authRepository.switchRoleToFarmer()
+        _isAdminDashboardOpen.value = false
     }
 
     init {

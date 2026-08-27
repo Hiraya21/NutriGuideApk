@@ -26,18 +26,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CompassCalibration
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PestControl
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Spa
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Button
@@ -68,6 +74,7 @@ import com.example.data.repository.AgriculturalRegion
 import com.example.domain.models.AppLanguage
 import com.example.domain.models.DisplayReadabilityMode
 import com.example.domain.models.FarmWeatherData
+import com.example.domain.models.UserAccount
 import com.example.domain.models.WeatherScenario
 import com.example.ui.components.LanguageDropdown
 import com.example.ui.components.WeatherAdvisoryCard
@@ -100,6 +107,10 @@ fun HomeScreen(
     isOffline: Boolean = false,
     isCachedContent: Boolean = false,
     isForcedOffline: Boolean = false,
+    currentUser: UserAccount? = null,
+    onOpenAuthModal: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    onOpenLanding: () -> Unit = {},
     onToggleForcedOffline: () -> Unit = {},
     onReadabilityModeChanged: (DisplayReadabilityMode) -> Unit = {},
     onLanguageSelected: (AppLanguage) -> Unit,
@@ -246,24 +257,6 @@ fun HomeScreen(
                                     color = Color.White
                                 )
                             }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Account & Delete Account Button
-                        IconButton(
-                            onClick = onOpenDeleteAccount,
-                            modifier = Modifier
-                                .size(34.dp)
-                                .testTag("btn_open_delete_account_header")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PersonRemove,
-                                contentDescription = "Delete Account",
-                                tint = Color.White
-                            )
                         }
                     }
                 }
@@ -749,6 +742,29 @@ fun HomeScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Card: Log Out & Portal Switch
+            FeatureCard(
+                title = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "Log Out / Switch Account"
+                    AppLanguage.TAGALOG -> "Mag-logout / Lumipat ng Account"
+                    AppLanguage.TAGLISH -> "Log Out / Switch Portal"
+                    AppLanguage.ILOCANO -> "Ag-logout / Sukatan ti Account"
+                    AppLanguage.CEBUANO -> "Mo-logout / Mag-ilis ug Account"
+                },
+                subtitle = when (currentLanguage) {
+                    AppLanguage.ENGLISH -> "Sign out and return to the main login & registration landing portal"
+                    AppLanguage.TAGALOG -> "I-sign out ang kasalukuyang profile at bumalik sa login portal"
+                    AppLanguage.TAGLISH -> "Sign out of active account and go to landing page"
+                    AppLanguage.ILOCANO -> "Ag-logout tapno agsubli iti portal ti login"
+                    AppLanguage.CEBUANO -> "Mo-sign out aron makabalik sa login portal"
+                },
+                icon = Icons.AutoMirrored.Filled.Logout,
+                testTag = "card_logout_action",
+                onClick = onLogout
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 

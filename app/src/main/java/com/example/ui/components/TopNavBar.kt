@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.Check
@@ -21,10 +23,19 @@ import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.MoreVert
+import com.example.ui.theme.FarmBrownPrimary
+import com.example.ui.theme.FarmTextDark
+import com.example.ui.theme.FarmTextSecondary
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.models.AppLanguage
+import com.example.domain.models.UserAccount
 import com.example.ui.theme.FarmGreenHeader
 import com.example.ui.theme.FarmGreenLight
 import com.example.ui.theme.FarmGreenPrimary
@@ -53,6 +65,10 @@ fun TopNavBar(
     isGuideDetailOpen: Boolean,
     currentLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
+    currentUser: UserAccount? = null,
+    onOpenAuthModal: () -> Unit = {},
+    onOpenAdminDashboard: () -> Unit = {},
+    onLogout: () -> Unit = {},
     isHighContrastMode: Boolean = false,
     onToggleHighContrastMode: () -> Unit = {},
     isOffline: Boolean = false,
@@ -60,6 +76,7 @@ fun TopNavBar(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var accountMenuExpanded by remember { mutableStateOf(false) }
 
     val screenTitle = when {
         isSoilAnalysisOpen -> when (currentLanguage) {
@@ -200,7 +217,7 @@ fun TopNavBar(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White.copy(alpha = 0.18f))
+                        .background(Color.White)
                         .clickable { expanded = true }
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                         .testTag("top_bar_language_switcher")
@@ -208,22 +225,22 @@ fun TopNavBar(
                     Icon(
                         imageVector = Icons.Default.Language,
                         contentDescription = "Language Switcher",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
+                        tint = FarmBrownPrimary,
+                        modifier = Modifier.size(17.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = currentLanguage.displayName,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = FarmBrownPrimary
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                     Icon(
                         imageVector = Icons.Default.ArrowDropDown,
                         contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
+                        tint = FarmBrownPrimary,
+                        modifier = Modifier.size(17.dp)
                     )
                 }
 
@@ -266,6 +283,128 @@ fun TopNavBar(
                             }
                         )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // User / Admin Account Button with Quick Actions & Logout
+            Box {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(
+                            if (currentUser?.isAdmin == true) Color(0xFF1565C0)
+                            else Color.White.copy(alpha = 0.22f)
+                        )
+                        .clickable { accountMenuExpanded = true }
+                        .padding(horizontal = 9.dp, vertical = 6.dp)
+                        .testTag("top_bar_account_button")
+                ) {
+                    Icon(
+                        imageVector = if (currentUser?.isAdmin == true) Icons.Default.Shield else Icons.Default.Person,
+                        contentDescription = "User & Admin Accounts",
+                        tint = if (currentUser?.isAdmin == true) Color(0xFFFFD54F) else Color.White,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (currentUser?.isAdmin == true) "Admin" else currentUser?.fullName?.split(" ")?.firstOrNull() ?: "Account",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = accountMenuExpanded,
+                    onDismissRequest = { accountMenuExpanded = false },
+                    modifier = Modifier
+                        .background(Color.White)
+                        .padding(vertical = 4.dp)
+                ) {
+                    // Header item showing user identity
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(
+                                    text = currentUser?.fullName ?: "Active Account",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = FarmTextDark
+                                )
+                                Text(
+                                    text = if (currentUser?.isAdmin == true) "DA / PhilRice Authorized" else "RSBSA: ${currentUser?.rsbsaNumber ?: "Registered"}",
+                                    fontSize = 11.sp,
+                                    color = FarmTextSecondary
+                                )
+                            }
+                        },
+                        onClick = {
+                            accountMenuExpanded = false
+                            onOpenAuthModal()
+                        }
+                    )
+
+                    HorizontalDivider()
+
+                    if (currentUser?.isAdmin == true) {
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.AdminPanelSettings,
+                                        contentDescription = null,
+                                        tint = Color(0xFF1565C0),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Open Admin Dashboard",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = FarmTextDark
+                                    )
+                                }
+                            },
+                            onClick = {
+                                accountMenuExpanded = false
+                                onOpenAdminDashboard()
+                            }
+                        )
+                        HorizontalDivider()
+                    }
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                                    contentDescription = null,
+                                    tint = Color(0xFFD32F2F),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Log Out (Bumalik sa Landing)",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFD32F2F)
+                                )
+                            }
+                        },
+                        onClick = {
+                            accountMenuExpanded = false
+                            onLogout()
+                        }
+                    )
                 }
             }
         }

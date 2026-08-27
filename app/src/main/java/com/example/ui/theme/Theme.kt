@@ -20,11 +20,14 @@ private val DarkColorScheme =
     primary = FarmGreenPrimary,
     secondary = FarmGreenSecondary,
     tertiary = FarmGreenContainer,
-    background = Color(0xFF121411),
-    surface = Color(0xFF1E211D),
+    background = FarmBackground,
+    surface = FarmSurface,
     onPrimary = Color.White,
-    onBackground = Color.White,
-    onSurface = Color.White
+    onSecondary = Color.White,
+    onTertiary = FarmTextDark,
+    onBackground = FarmTextDark,
+    onSurface = FarmTextDark,
+    outline = FarmBorder
   )
 
 private val LightColorScheme =
